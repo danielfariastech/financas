@@ -55,7 +55,7 @@ import{getFirestore,collection,addDoc,deleteDoc,updateDoc,setDoc,doc,onSnapshot}
 const firebaseConfig={apiKey:"AIzaSyA9CAw5fkwM5-wU5jKyXALJnM6oRig3ZVo",authDomain:"financas-pessoais-f6052.firebaseapp.com",projectId:"financas-pessoais-f6052",storageBucket:"financas-pessoais-f6052.firebasestorage.app",messagingSenderId:"235846742963",appId:"1:235846742963:web:f9877b71b6e66ca2d911c6"};
 
 const $=i=>document.getElementById(i),brl=n=>n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
-const CATS=["Lanches","Mercantil","Açaí","Almoço","Merenda","Uber","Diversos"];
+const CATS=["Lanches","Mercantil","Açaí","Almoço","Merenda","Shalom","Uber","Diversos"];
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
 let itens=[],gastos=[],metas={economia:20,orc:{}},subs=[];
 const hoje=new Date().toISOString().slice(0,10);
