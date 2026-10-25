@@ -40,6 +40,10 @@ button{cursor:pointer}.p{background:var(--ac);color:#fff;border-color:var(--ac)}
 <div class="card"><h2>Lançamentos do mês <span class="m">(✎ ajusta o valor só neste mês · 🧾 marca como boleto · ⬜/✅ marca pago)</span></h2><div class="m" style="margin-bottom:8px">🟩 Pago &nbsp; 🟥 Não pago &nbsp;·&nbsp; <span id="pgres"></span></div><div class="sc"><table><tbody id="li"></tbody></table></div></div>
 <div class="card"><h2>Gastos por categoria</h2><div id="orc"></div>
 </div></div>
+<div class="card"><h2 id="cart">Cartões</h2><div class="m" style="margin-bottom:8px">Atualize toda semana quanto já usou em cada cartão neste mês (o valor novo substitui o anterior).</div>
+<div class="row"><label class="m" style="flex:1 1 120px;display:grid;gap:4px">Amazon<input id="c0" type="number" step="0.01"></label><label class="m" style="flex:1 1 120px;display:grid;gap:4px">Porto<input id="c1" type="number" step="0.01"></label><label class="m" style="flex:1 1 120px;display:grid;gap:4px">Inter<input id="c2" type="number" step="0.01"></label><button class="p" id="sc" style="align-self:end">Salvar</button></div>
+<div class="m" id="cup" style="margin:6px 0 10px"></div>
+<div class="sc"><table><thead><tr><th>Mês</th><th>Amazon</th><th>Porto</th><th>Inter</th><th>Total</th></tr></thead><tbody id="cb"></tbody></table></div></div>
 <div class="card"><h2 id="anot">Pagamentos do ano</h2><div class="m" style="margin-bottom:8px">Só os boletos e pagamentos (os lançamentos marcados com 🧾). Compras dentro do cartão não entram aqui. 🟩 Pago · 🟥 Não pago. Toque em um valor para marcar.</div>
 <div class="sc"><table><thead id="ah"></thead><tbody id="ab"></tbody></table></div></div>
 <div class="card"><h2>Planejamento até dez/2027</h2><div class="big" id="plt"></div>
@@ -57,7 +61,7 @@ const firebaseConfig={apiKey:"AIzaSyA9CAw5fkwM5-wU5jKyXALJnM6oRig3ZVo",authDomai
 const $=i=>document.getElementById(i),brl=n=>n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 const CATS=["Lanches","Mercantil","Açaí","Almoço","Merenda","Shalom","Uber","Diversos"];
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
-let itens=[],gastos=[],metas={economia:20,orc:{}},subs=[];
+let cart={},itens=[],gastos=[],metas={economia:20,orc:{}},subs=[];
 const hoje=new Date().toISOString().slice(0,10);
 $("mes").value=$("ii").value=hoje.slice(0,7);
 $("icat").innerHTML='<option value="">Categoria (opcional)</option>'+CATS.map(c=>`<option>${c}</option>`).join("");
@@ -76,6 +80,7 @@ onAuthStateChanged(auth,u=>{
  if(!u)return;
  const er=e=>{$("err").textContent="Sem permissão ou erro: "+e.message;$("login").classList.remove("hide");$("app").classList.add("hide")};
  subs.push(onSnapshot(collection(db,"itens"),s=>{itens=s.docs.map(d=>({id:d.id,...d.data()}));render()},er));
+ subs.push(onSnapshot(collection(db,"cartoes"),s=>{cart={};s.docs.forEach(d=>cart[d.id]=d.data());render()},er));
 });
 
 function render(){
@@ -84,6 +89,12 @@ function render(){
  const por={};I.forEach(i=>{if(i.grupo!=="receita"&&i.grupo!=="cartao"&&i.cat)por[i.cat]=(por[i.cat]||0)+val(i,m)*pw(i)});
  const sal=rec-des,eco=rec?sal/rec*100:0;
  const tot=mm=>{let r=0,d=0;itens.forEach(i=>{if(ativo(i,mm)&&pw(i)>0){const v=val(i,mm)*pw(i);if(i.grupo==="receita")r+=v;else if(i.grupo!=="cartao")d+=v}});return[r,d]};
+ {const c=cart[m],ae=document.activeElement&&document.activeElement.id;
+ if(!/^c[0-2]$/.test(ae||""))[0,1,2].forEach(k=>$("c"+k).value=c&&c.v&&c.v[k]?c.v[k]:"");
+ $("cup").textContent=c?"Última atualização: "+c.at.split("-").reverse().join("/"):"Ainda sem valores neste mês.";
+ $("cart").textContent="Cartões em "+m.slice(5)+"/"+m.slice(0,4);
+ const CY=m.slice(0,4),ct=[0,0,0];
+ $("cb").innerHTML=Array.from({length:12},(_,k)=>{const mm=CY+"-"+String(k+1).padStart(2,"0"),v=(cart[mm]&&cart[mm].v)||[0,0,0];v.forEach((x,j)=>ct[j]+=x);return`<tr data-m="${mm}" style="cursor:pointer${mm===m?";font-weight:700":""}"><td>${String(k+1).padStart(2,"0")}/${CY}</td>${v.map(x=>"<td>"+(x?brl(x):"-")+"</td>").join("")}<td>${v.some(x=>x)?brl(v[0]+v[1]+v[2]):"-"}</td></tr>`}).join("")+`<tr><th>Total do ano</th>${ct.map(x=>"<th>"+brl(x)+"</th>").join("")}<th>${brl(ct[0]+ct[1]+ct[2])}</th></tr>`;}
  let ps=0,pn=0;I.forEach(i=>{if(i.grupo!=="receita"&&bol(i)){const v=val(i,m)*pw(i);pg(i,m)?ps+=v:pn+=v}});
  $("pgres").innerHTML=`Pago <b class="r">${brl(ps)}</b> · Falta pagar <b class="d">${brl(pn)}</b>`;
  const Y=m.slice(0,4),MN=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"],mk=k=>Y+"-"+String(k+1).padStart(2,"0");
@@ -104,6 +115,7 @@ function render(){
   return`<div style="margin-bottom:9px"><div class="row" style="justify-content:space-between"><span>${c}</span><span class="m" style="text-align:right">${brl(g)}</span></div><div class="bar"><i style="width:${pc}%;background:${cor}"></i></div></div>`}).join("");
 }
 $("mes").onchange=$("pes").onchange=render;
+$("sc").onclick=()=>setDoc(doc(db,"cartoes",$("mes").value),{v:[0,1,2].map(k=>parseFloat($("c"+k).value)||0),at:new Date().toISOString().slice(0,10)});
 document.body.onclick=async e=>{const tr=e.target.closest("tr[data-m]");if(tr){$("mes").value=tr.dataset.m;render();return}const b=e.target.closest("button[data-a]");if(!b)return;const{a,id,c}=b.dataset;
  if(a==="del"&&confirm("Excluir este lançamento?"))await deleteDoc(doc(db,c,id));
  if(a==="bol"){const it=itens.find(x=>x.id===id);await updateDoc(doc(db,"itens",id),{boleto:!it.boleto})}
