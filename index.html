@@ -29,21 +29,19 @@ button{cursor:pointer}.p{background:var(--ac);color:#fff;border-color:var(--ac)}
 <div class="card"><div class="m">Economia (meta <span id="km"></span>%)</div><div class="big" id="ke"></div></div></div>
 
 <div class="g">
-<div class="card"><h2>Novo lançamento mensal (fixa, parcela, fatura, receita)</h2><div class="row">
-<select id="ig"><option value="fixa">Despesa fixa</option><option value="parcela">Parcelada</option><option value="cartao">Fatura de cartão</option><option value="receita">Receita</option></select>
+<div class="card"><h2>Novo lançamento</h2><div class="row">
+<select id="ig"><option value="fixa">Despesa fixa</option><option value="parcela">Parcelada</option><option value="avulsa">Gasto avulso (1 vez)</option><option value="cartao">Fatura de cartão</option><option value="receita">Receita</option></select>
 <input id="id" placeholder="Descrição" style="flex:2 1 160px"><input id="iv" type="number" step="0.01" placeholder="Valor">
 <input id="idia" type="number" min="1" max="31" placeholder="Dia"><input id="ii" type="month"><input id="ip" type="number" min="0" placeholder="Parcelas (0 = sem fim)">
-<select id="ipe"><option>Diversos</option><option>Daniel</option><option>Regiane</option></select><button class="p" id="ai">Adicionar</button></div></div>
-<div class="card"><h2>Gasto do dia</h2><div class="row">
-<input id="gd" type="date"><select id="gc"></select><input id="gdesc" placeholder="Descrição" style="flex:2 1 120px"><input id="gv" type="number" step="0.01" placeholder="Valor">
-<select id="gp"><option>Daniel</option><option>Regiane</option><option>Diversos</option></select><button class="p" id="ag">Adicionar</button></div></div></div>
+<select id="ipe"><option>Diversos</option><option>Daniel</option><option>Regiane</option></select><select id="icat"></select><button class="p" id="ai">Adicionar</button></div></div>
+</div>
 
 <div class="g">
 <div class="card"><h2>Lançamentos do mês <span class="m">(✎ ajusta o valor só neste mês)</span></h2><div class="sc"><table><tbody id="li"></tbody></table></div></div>
-<div class="card"><h2>Gastos do dia e orçamento</h2><div id="orc"></div>
+<div class="card"><h2>Orçamento por categoria</h2><div id="orc"></div>
 <div class="row" style="margin:8px 0"><select id="mc"></select><input id="ml" type="number" placeholder="Limite R$"><button id="sm">Salvar limite</button></div>
 <div class="row"><span class="m" style="flex:2">Meta de economia (% da receita)</span><input id="me" type="number" min="0" max="100"><button id="se">Salvar</button></div>
-<div class="sc" style="margin-top:10px"><table><tbody id="lg"></tbody></table></div></div></div>
+</div></div>
 </div>
 
 <script type="module">
@@ -58,13 +56,13 @@ const CATS=["Lanches","Mercantil","Açaí","Almoço","Merenda","Uber","Diversos"
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
 let itens=[],gastos=[],metas={economia:20,orc:{}},subs=[];
 const hoje=new Date().toISOString().slice(0,10);
-$("mes").value=$("ii").value=hoje.slice(0,7);$("gd").value=hoje;
-$("gc").innerHTML=$("mc").innerHTML=CATS.map(c=>`<option>${c}</option>`).join("");
+$("mes").value=$("ii").value=hoje.slice(0,7);
+$("mc").innerHTML=CATS.map(c=>`<option>${c}</option>`).join("");$("icat").innerHTML='<option value="">Categoria (opcional)</option>'+$("mc").innerHTML;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const mi=s=>{const[a,b]=s.split("-");return a*12+ +b};
 const ativo=(it,m)=>{const d=mi(m)-mi(it.inicio);return d>=0&&(!it.parcelas||d<it.parcelas)};
 const val=(it,m)=>it.aj&&it.aj[m]!=null?it.aj[m]:it.valor;
-const nome={fixa:"Fixa",parcela:"Parcela",cartao:"Cartão",receita:"Receita"};
+const nome={fixa:"Fixa",parcela:"Parcela",cartao:"Cartão",avulsa:"Avulso",receita:"Receita"};
 
 $("in").onclick=()=>signInWithPopup(auth,new GoogleAuthProvider()).catch(e=>$("err").textContent=e.message);
 $("out").onclick=()=>signOut(auth);
@@ -73,33 +71,26 @@ onAuthStateChanged(auth,u=>{
  $("login").classList.toggle("hide",!!u);$("app").classList.toggle("hide",!u);
  if(!u)return;
  const er=e=>{$("err").textContent="Sem permissão ou erro: "+e.message;$("login").classList.remove("hide");$("app").classList.add("hide")};
- subs.push(onSnapshot(collection(db,"itens"),s=>{itens=s.docs.map(d=>({id:d.id,...d.data()}));render()},er));
- subs.push(onSnapshot(collection(db,"gastos"),s=>{gastos=s.docs.map(d=>({id:d.id,...d.data()}));render()},er));
- subs.push(onSnapshot(doc(db,"config","metas"),s=>{if(s.exists())metas={economia:20,orc:{},...s.data()};render()},er));
+ subs.push(onSnapshot(collection(db,"itens"),s=>{itens=s.docs.map(d=>({id:d.id,...d.data()}));render()},er)); subs.push(onSnapshot(doc(db,"config","metas"),s=>{if(s.exists())metas={economia:20,orc:{},...s.data()};render()},er));
 });
 
 function render(){
  const m=$("mes").value,p=$("pes").value,pw=x=>{const dv=x.pessoa==="Diversos"||x.pessoa==="Casa";return p==="Todos"?1:p==="Diversos"?(dv?1:0):dv?.5:(x.pessoa===p?1:0)},f=x=>pw(x)>0;
- const I=itens.filter(i=>ativo(i,m)&&f(i)).sort((a,b)=>(a.dia||0)-(b.dia||0));
- const G=gastos.filter(g=>g.data.slice(0,7)===m&&f(g)).sort((a,b)=>b.data.localeCompare(a.data));
- let rec=0,des=0;I.forEach(i=>i.grupo==="receita"?rec+=val(i,m)*pw(i):des+=val(i,m)*pw(i));
- const por={};G.forEach(g=>{const v=g.valor*pw(g);por[g.cat]=(por[g.cat]||0)+v;des+=v});
+ const I=itens.filter(i=>ativo(i,m)&&f(i)).sort((a,b)=>(a.dia||0)-(b.dia||0)); let rec=0,des=0;I.forEach(i=>i.grupo==="receita"?rec+=val(i,m)*pw(i):des+=val(i,m)*pw(i));
+ const por={};I.forEach(i=>{if(i.grupo!=="receita"&&i.cat)por[i.cat]=(por[i.cat]||0)+val(i,m)*pw(i)});
  const sal=rec-des,eco=rec?sal/rec*100:0,meta=+metas.economia||0;
  $("kr").textContent=brl(rec);$("kd").textContent=brl(des);$("ks").textContent=brl(sal);$("ks").className="big "+(sal>=0?"r":"d");
  $("km").textContent=meta;$("ke").textContent=eco.toFixed(1)+"%";$("ke").className="big "+(eco>=meta?"r":"d");$("me").value=meta;
- $("li").innerHTML=I.map(i=>`<tr><td>${i.dia?"Dia "+i.dia:""}</td><td>${esc(i.desc)}</td><td class="m">${nome[i.grupo]} · ${i.pessoa}${pw(i)===.5?" ½":""}${i.parcelas?` · ${mi(m)-mi(i.inicio)+1}/${i.parcelas}`:""}</td><td class="${i.grupo==="receita"?"r":"d"}">${brl(val(i,m)*pw(i))}</td><td><button class="x" data-a="aj" data-id="${i.id}">✎</button><button class="x" data-a="del" data-c="itens" data-id="${i.id}">✕</button></td></tr>`).join("")||'<tr><td class="m">Nada neste mês.</td></tr>';
+ $("li").innerHTML=I.map(i=>`<tr><td>${i.dia?"Dia "+i.dia:""}</td><td>${esc(i.desc)}</td><td class="m">${nome[i.grupo]} · ${i.pessoa}${i.cat?" · "+i.cat:""}${pw(i)===.5?" ½":""}${i.parcelas>1?` · ${mi(m)-mi(i.inicio)+1}/${i.parcelas}`:""}</td><td class="${i.grupo==="receita"?"r":"d"}">${brl(val(i,m)*pw(i))}</td><td><button class="x" data-a="aj" data-id="${i.id}">✎</button><button class="x" data-a="del" data-c="itens" data-id="${i.id}">✕</button></td></tr>`).join("")||'<tr><td class="m">Nada neste mês.</td></tr>';
  $("orc").innerHTML=CATS.map(c=>{const g=por[c]||0,l=metas.orc[c]||0,pc=l?Math.min(g/l*100,100):0,cor=!l?"var(--m)":g>l?"var(--bad)":g>l*.8?"var(--w)":"var(--ok)";
   return`<div style="margin-bottom:9px"><div class="row" style="justify-content:space-between"><span>${c}</span><span class="m" style="text-align:right">${brl(g)}${l?" / "+brl(l):""}</span></div><div class="bar"><i style="width:${pc}%;background:${cor}"></i></div></div>`}).join("");
- $("lg").innerHTML=G.map(g=>`<tr><td>${g.data.split("-").reverse().join("/")}</td><td>${esc(g.desc)}</td><td class="m">${g.cat} · ${g.pessoa}${pw(g)===.5?" ½":""}</td><td class="d">${brl(g.valor*pw(g))}</td><td><button class="x" data-a="del" data-c="gastos" data-id="${g.id}">✕</button></td></tr>`).join("");
 }
 $("mes").onchange=$("pes").onchange=render;
 document.body.onclick=async e=>{const b=e.target.closest("button[data-a]");if(!b)return;const{a,id,c}=b.dataset;
  if(a==="del"&&confirm("Excluir este lançamento?"))await deleteDoc(doc(db,c,id));
  if(a==="aj"){const m=$("mes").value,it=itens.find(x=>x.id===id),v=prompt("Valor para "+m+":",val(it,m));if(v!==null&&!isNaN(parseFloat(v)))await updateDoc(doc(db,"itens",id),{["aj."+m]:parseFloat(v.replace(",","."))})}};
 $("ai").onclick=async()=>{const v=parseFloat($("iv").value);if(!v||!$("id").value||!$("ii").value)return alert("Preencha descrição, valor e mês inicial.");
- await addDoc(collection(db,"itens"),{grupo:$("ig").value,desc:$("id").value,valor:v,dia:+$("idia").value||0,inicio:$("ii").value,parcelas:+$("ip").value||0,pessoa:$("ipe").value});$("id").value=$("iv").value=""};
-$("ag").onclick=async()=>{const v=parseFloat($("gv").value);if(!v||!$("gd").value)return alert("Informe data e valor.");
- await addDoc(collection(db,"gastos"),{data:$("gd").value,cat:$("gc").value,desc:$("gdesc").value||$("gc").value,valor:v,pessoa:$("gp").value});$("gdesc").value=$("gv").value=""};
+ await addDoc(collection(db,"itens"),{grupo:$("ig").value,desc:$("id").value,valor:v,dia:+$("idia").value||0,inicio:$("ii").value,parcelas:$("ig").value==="avulsa"?1:+$("ip").value||0,cat:$("icat").value,pessoa:$("ipe").value});$("id").value=$("iv").value=""};
 $("sm").onclick=()=>{const l=parseFloat($("ml").value);const o={...metas.orc};l>0?o[$("mc").value]=l:delete o[$("mc").value];metas.orc=o;setDoc(doc(db,"config","metas"),metas);$("ml").value=""};
 $("se").onclick=()=>{metas.economia=+$("me").value||0;setDoc(doc(db,"config","metas"),metas)};
 </script></main></body></html>
