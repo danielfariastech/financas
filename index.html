@@ -14,7 +14,7 @@ input,select,button{font:inherit;color:var(--tx);background:var(--bg);border:1px
 button{cursor:pointer}.p{background:var(--ac);color:#fff;border-color:var(--ac)}.big{font-size:21px;font-weight:700}.m{color:var(--m);font-size:13px}
 .bar{height:8px;background:var(--bd);border-radius:6px;overflow:hidden}.bar i{display:block;height:100%}
 .sc{overflow-x:auto}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:6px;border-bottom:1px solid var(--bd);white-space:nowrap}
-.r{color:var(--ok)}.d{color:var(--bad)}.x{border:0;background:none;color:var(--m);padding:2px 6px;flex:0}
+.r{color:var(--ok)}.d{color:var(--bad)}.rp td{background:rgba(22,163,74,.14)}.rn td{background:rgba(220,38,38,.12)}.cel{width:100%;border:0;border-radius:6px;padding:5px 8px;cursor:pointer;color:var(--tx)}.cp{background:rgba(22,163,74,.3)}.cn{background:rgba(220,38,38,.28)}.x{border:0;background:none;color:var(--m);padding:2px 6px;flex:0}
 #login{text-align:center;padding:60px 0}.hide{display:none}
 </style></head><body><main>
 <div id="login"><h1>💰 Finanças do Casal</h1><p class="m">Entre com a conta Google autorizada.</p><button class="p" id="in">Entrar com Google</button><p class="d" id="err"></p></div>
@@ -37,9 +37,11 @@ button{cursor:pointer}.p{background:var(--ac);color:#fff;border-color:var(--ac)}
 </div>
 
 <div class="g">
-<div class="card"><h2>Lançamentos do mês <span class="m">(✎ ajusta o valor só neste mês)</span></h2><div class="sc"><table><tbody id="li"></tbody></table></div></div>
+<div class="card"><h2>Lançamentos do mês <span class="m">(✎ ajusta o valor só neste mês · ⬜/✅ marca pago)</span></h2><div class="m" style="margin-bottom:8px">🟩 Pago &nbsp; 🟥 Não pago &nbsp;·&nbsp; <span id="pgres"></span></div><div class="sc"><table><tbody id="li"></tbody></table></div></div>
 <div class="card"><h2>Gastos por categoria</h2><div id="orc"></div>
 </div></div>
+<div class="card"><h2 id="anot">Pagamentos do ano</h2><div class="m" style="margin-bottom:8px">🟩 Pago · 🟥 Não pago. Toque em um valor para marcar como pago ou não pago.</div>
+<div class="sc"><table><thead id="ah"></thead><tbody id="ab"></tbody></table></div></div>
 <div class="card"><h2>Planejamento até dez/2027</h2><div class="big" id="plt"></div>
 <div class="m" style="margin-bottom:8px">Sobra = receitas − despesas já cadastradas em cada mês. Toque em um mês para abri-lo. Fixas e receitas "sem fim" se repetem até dez/2027.</div>
 <div class="sc"><table><thead><tr><th>Mês</th><th>Receitas</th><th>Despesas</th><th>Pode gastar</th><th>Acumulado</th></tr></thead><tbody id="pl"></tbody></table></div></div>
@@ -63,6 +65,7 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",
 const mi=s=>{const[a,b]=s.split("-");return a*12+ +b};
 const ativo=(it,m)=>{const d=mi(m)-mi(it.inicio);return d>=0&&(!it.parcelas||d<it.parcelas)};
 const val=(it,m)=>it.aj&&it.aj[m]!=null?it.aj[m]:it.valor;
+const pg=(i,m)=>!!(i.pago&&i.pago[m]);
 const nome={fixa:"Fixa",parcela:"Parcela",cartao:"Cartão",avulsa:"Avulso",receita:"Receita"};
 
 $("in").onclick=()=>signInWithPopup(auth,new GoogleAuthProvider()).catch(e=>$("err").textContent=e.message);
@@ -81,6 +84,14 @@ function render(){
  const por={};I.forEach(i=>{if(i.grupo!=="receita"&&i.cat)por[i.cat]=(por[i.cat]||0)+val(i,m)*pw(i)});
  const sal=rec-des,eco=rec?sal/rec*100:0;
  const tot=mm=>{let r=0,d=0;itens.forEach(i=>{if(ativo(i,mm)&&pw(i)>0){const v=val(i,mm)*pw(i);i.grupo==="receita"?r+=v:d+=v}});return[r,d]};
+ let ps=0,pn=0;I.forEach(i=>{if(i.grupo!=="receita"){const v=val(i,m)*pw(i);pg(i,m)?ps+=v:pn+=v}});
+ $("pgres").innerHTML=`Pago <b class="r">${brl(ps)}</b> · Falta pagar <b class="d">${brl(pn)}</b>`;
+ const Y=m.slice(0,4),MN=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"],mk=k=>Y+"-"+String(k+1).padStart(2,"0");
+ $("anot").textContent="Pagamentos do ano "+Y;
+ $("ah").innerHTML="<tr><th>Dia</th><th>Descrição</th>"+MN.map(n=>"<th>"+n+"</th>").join("")+"</tr>";
+ const AD=itens.filter(i=>i.grupo!=="receita"&&pw(i)>0&&MN.some((_,k)=>ativo(i,mk(k)))).sort((a,b)=>(a.dia||0)-(b.dia||0)||a.desc.localeCompare(b.desc));
+ const tt=Array(12).fill(0),tp=Array(12).fill(0);
+ $("ab").innerHTML=AD.map(i=>"<tr><td>"+(i.dia||"")+"</td><td>"+esc(i.desc)+"</td>"+MN.map((_,k)=>{const mm=mk(k);if(!ativo(i,mm))return'<td class="m">-</td>';const v=val(i,mm)*pw(i);tt[k]+=v;if(pg(i,mm))tp[k]+=v;return`<td><button class="cel ${pg(i,mm)?"cp":"cn"}" data-a="pg" data-id="${i.id}" data-m="${mm}">${brl(v)}</button></td>`}).join("")+"</tr>").join("")+"<tr><th></th><th>Total</th>"+tt.map(v=>"<th>"+brl(v)+"</th>").join("")+"</tr><tr><th></th><th>Falta pagar</th>"+tt.map((v,k)=>'<th class="d">'+brl(v-tp[k])+"</th>").join("")+"</tr>";
  let y=+hoje.slice(0,4),mo=+hoje.slice(5,7),acc=0,TR=0,TD=0,rows="";
  while(y<2028){const mm=y+"-"+String(mo).padStart(2,"0"),[r,d]=tot(mm);acc+=r-d;TR+=r;TD+=d;
   rows+=`<tr data-m="${mm}" style="cursor:pointer"><td>${String(mo).padStart(2,"0")}/${y}</td><td class="r">${brl(r)}</td><td class="d">${brl(d)}</td><td class="${r-d>=0?"r":"d"}">${brl(r-d)}</td><td class="${acc>=0?"r":"d"}">${brl(acc)}</td></tr>`;if(++mo>12){mo=1;y++}}
@@ -88,13 +99,14 @@ function render(){
  $("plt").innerHTML=`Ainda pode gastar até dez/2027: <span class="${acc>=0?"r":"d"}">${brl(acc)}</span>`;
  $("kr").textContent=brl(rec);$("kd").textContent=brl(des);$("ks").textContent=brl(sal);$("ks").className="big "+(sal>=0?"r":"d");
  $("ke").textContent=eco.toFixed(1)+"%";$("ke").className="big "+(eco>=0?"r":"d");
- $("li").innerHTML=I.map(i=>`<tr><td>${i.dia?"Dia "+i.dia:""}</td><td>${esc(i.desc)}</td><td class="m">${nome[i.grupo]} · ${i.pessoa}${i.cat?" · "+i.cat:""}${pw(i)===.5?" ½":""}${i.parcelas>1?` · ${mi(m)-mi(i.inicio)+1}/${i.parcelas}`:""}</td><td class="${i.grupo==="receita"?"r":"d"}">${brl(val(i,m)*pw(i))}</td><td><button class="x" data-a="aj" data-id="${i.id}">✎</button><button class="x" data-a="del" data-c="itens" data-id="${i.id}">✕</button></td></tr>`).join("")||'<tr><td class="m">Nada neste mês.</td></tr>';
+ $("li").innerHTML=I.map(i=>`<tr class="${i.grupo==="receita"?"":(pg(i,m)?"rp":"rn")}"><td>${i.dia?"Dia "+i.dia:""}</td><td>${esc(i.desc)}</td><td class="m">${nome[i.grupo]} · ${i.pessoa}${i.cat?" · "+i.cat:""}${pw(i)===.5?" ½":""}${i.parcelas>1?` · ${mi(m)-mi(i.inicio)+1}/${i.parcelas}`:""}</td><td class="${i.grupo==="receita"?"r":""}">${brl(val(i,m)*pw(i))}</td><td>${i.grupo==="receita"?"":`<button class="x" data-a="pg" data-id="${i.id}">${pg(i,m)?"✅":"⬜"}</button>`}<button class="x" data-a="aj" data-id="${i.id}">✎</button><button class="x" data-a="del" data-c="itens" data-id="${i.id}">✕</button></td></tr>`).join("")||'<tr><td class="m">Nada neste mês.</td></tr>';
  $("orc").innerHTML=CATS.map(c=>{const g=por[c]||0,pc=des?g/des*100:0,cor="var(--ac)";
   return`<div style="margin-bottom:9px"><div class="row" style="justify-content:space-between"><span>${c}</span><span class="m" style="text-align:right">${brl(g)}</span></div><div class="bar"><i style="width:${pc}%;background:${cor}"></i></div></div>`}).join("");
 }
 $("mes").onchange=$("pes").onchange=render;
 document.body.onclick=async e=>{const tr=e.target.closest("tr[data-m]");if(tr){$("mes").value=tr.dataset.m;render();return}const b=e.target.closest("button[data-a]");if(!b)return;const{a,id,c}=b.dataset;
  if(a==="del"&&confirm("Excluir este lançamento?"))await deleteDoc(doc(db,c,id));
+ if(a==="pg"){const mm=b.dataset.m||$("mes").value,it=itens.find(x=>x.id===id);await updateDoc(doc(db,"itens",id),{["pago."+mm]:!pg(it,mm)})}
  if(a==="aj"){const m=$("mes").value,it=itens.find(x=>x.id===id),v=prompt("Valor para "+m+":",val(it,m));if(v!==null&&!isNaN(parseFloat(v)))await updateDoc(doc(db,"itens",id),{["aj."+m]:parseFloat(v.replace(",","."))})}};
 $("ai").onclick=async()=>{const v=parseFloat($("iv").value);if(!v||!$("id").value||!$("ii").value)return alert("Preencha descrição, valor e mês inicial.");
  await addDoc(collection(db,"itens"),{grupo:$("ig").value,desc:$("id").value,valor:v,dia:+$("idia").value||0,inicio:$("ii").value,parcelas:$("ig").value==="avulsa"?1:+$("ip").value||0,cat:$("icat").value,pessoa:$("ipe").value});$("id").value=$("iv").value=""};
