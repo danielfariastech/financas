@@ -75,6 +75,7 @@ const mi=s=>{const[a,b]=s.split("-");return a*12+ +b};
 const ativo=(it,m)=>{const d=mi(m)-mi(it.inicio);return d>=0&&(!it.parcelas||d<it.parcelas)};
 const val=(it,m)=>it.aj&&it.aj[m]!=null?it.aj[m]:it.valor;
 const pg=(i,m)=>!!(i.pago&&i.pago[m]),bol=i=>i.grupo!=="avulsa"&&(!!i.boleto||i.grupo==="cartao");
+const RK={receita:0,fixa:1,cartao:2,parcela:3,avulsa:4};
 const nome={fixa:"Fixa",parcela:"Parcela",cartao:"Cartão",avulsa:"Avulso",receita:"Receita"};
 
 $("in").onclick=()=>signInWithPopup(auth,new GoogleAuthProvider()).catch(e=>$("err").textContent=e.message);
@@ -91,7 +92,7 @@ onAuthStateChanged(auth,u=>{
 
 function render(){
  const m=$("mes").value,p=$("pes").value,pw=x=>{const dv=x.pessoa==="Diversos"||x.pessoa==="Casa";return p==="Todos"?1:p==="Diversos"?(dv?1:0):dv?.5:(x.pessoa===p?1:0)},f=x=>pw(x)>0;
- const I=itens.filter(i=>ativo(i,m)&&f(i)).sort((a,b)=>(a.dia||0)-(b.dia||0)); let rec=0,des=0;I.forEach(i=>{const v=val(i,m)*pw(i);if(i.grupo==="receita")rec+=v;else if(i.grupo!=="cartao")des+=v});
+ const I=itens.filter(i=>ativo(i,m)&&f(i)).sort((a,b)=>((RK[a.grupo]??9)-(RK[b.grupo]??9))||(a.dia||0)-(b.dia||0)); let rec=0,des=0;I.forEach(i=>{const v=val(i,m)*pw(i);if(i.grupo==="receita")rec+=v;else if(i.grupo!=="cartao")des+=v});
  const por={};I.forEach(i=>{if(i.grupo!=="receita"&&i.grupo!=="cartao"&&i.cat)por[i.cat]=(por[i.cat]||0)+val(i,m)*pw(i)});
  const sal=rec-des,eco=rec?sal/rec*100:0;
  const tot=mm=>{let r=0,d=0;itens.forEach(i=>{if(ativo(i,mm)&&pw(i)>0){const v=val(i,mm)*pw(i);if(i.grupo==="receita")r+=v;else if(i.grupo!=="cartao")d+=v}});return[r,d]};
