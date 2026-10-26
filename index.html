@@ -53,6 +53,7 @@ button{cursor:pointer}.p{background:var(--ac);color:#fff;border-color:var(--ac)}
 <div class="row"><select id="tpe"><option>Maira</option><option>Rodiney</option><option>Cleyton</option></select><input id="tdesc" placeholder="Compra" style="flex:2 1 150px"><input id="tval" type="number" step="0.01" placeholder="Valor"><input id="tini" type="month"><input id="tpar" type="number" min="0" placeholder="Parcelas (0 = sem fim)"><button class="p" id="tadd">Adicionar</button></div>
 <div class="m" id="tres" style="margin:10px 0"></div><div id="tl"></div>
 <h2 style="margin-top:14px">Visão do ano</h2><div class="sc"><table><thead><tr><th>Mês</th><th>Maira</th><th>Rodiney</th><th>Cleyton</th></tr></thead><tbody id="tb"></tbody></table></div></div>
+<div class="m" style="text-align:center;margin:18px 0"><button id="lm">Apagar o mês selecionado e começar a partir do mês seguinte</button></div>
 </div>
 
 <script type="module">
@@ -128,6 +129,14 @@ function render(){
   return`<div style="margin-bottom:9px"><div class="row" style="justify-content:space-between"><span>${c}</span><span class="m" style="text-align:right">${brl(g)}</span></div><div class="bar"><i style="width:${pc}%;background:${cor}"></i></div></div>`}).join("");
 }
 $("mes").onchange=$("pes").onchange=render;
+$("lm").onclick=async()=>{const m=$("mes").value,lbl=m.slice(5)+"/"+m.slice(0,4);
+ if(!confirm("Apagar TUDO de "+lbl+"? O que continua nos meses seguintes passa a começar no mês seguinte. Não dá para desfazer."))return;
+ if(prompt("Para confirmar, digite "+lbl)!==lbl)return;
+ const nx=mm=>{let[y,k]=mm.split("-").map(Number);k++;if(k>12){k=1;y++}return y+"-"+String(k).padStart(2,"0")};
+ for(const[col,arr]of[["itens",itens],["terceiros",terc]])for(const it of arr){if(!ativo(it,m))continue;const d=mi(m)-mi(it.inicio),cont=!it.parcelas||d+1<it.parcelas;
+  if(cont)await updateDoc(doc(db,col,it.id),{inicio:nx(m),parcelas:it.parcelas?it.parcelas-(d+1):0});else await deleteDoc(doc(db,col,it.id))}
+ if(cart[m])await deleteDoc(doc(db,"cartoes",m));
+ alert("Mês "+lbl+" apagado.")};
 $("tadd").onclick=async()=>{const v=parseFloat($("tval").value);if(!v||!$("tdesc").value||!$("tini").value)return alert("Preencha compra, valor e mês inicial.");await addDoc(collection(db,"terceiros"),{pessoa:$("tpe").value,desc:$("tdesc").value,valor:v,inicio:$("tini").value,parcelas:+$("tpar").value||0});$("tdesc").value=$("tval").value=""};
 $("sc").onclick=()=>setDoc(doc(db,"cartoes",$("mes").value),{v:[0,1,2].map(k=>parseFloat($("c"+k).value)||0),at:new Date().toISOString().slice(0,10)});
 document.body.onclick=async e=>{const tr=e.target.closest("tr[data-m]");if(tr){$("mes").value=tr.dataset.m;render();return}const b=e.target.closest("button[data-a]");if(!b)return;const{a,id,c}=b.dataset;
