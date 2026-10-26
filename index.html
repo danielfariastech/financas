@@ -44,6 +44,10 @@ button{cursor:pointer}.p{background:var(--ac);color:#fff;border-color:var(--ac)}
 <div class="row"><label class="m" style="flex:1 1 120px;display:grid;gap:4px">Amazon<input id="c0" type="number" step="0.01"></label><label class="m" style="flex:1 1 120px;display:grid;gap:4px">Porto<input id="c1" type="number" step="0.01"></label><label class="m" style="flex:1 1 120px;display:grid;gap:4px">Inter<input id="c2" type="number" step="0.01"></label><button class="p" id="sc" style="align-self:end">Salvar</button></div>
 <div class="m" id="cup" style="margin:6px 0 10px"></div>
 <div class="sc"><table><thead><tr><th>Mês</th><th>Amazon</th><th>Porto</th><th>Inter</th><th>Total</th></tr></thead><tbody id="cb"></tbody></table></div></div>
+<div class="card"><h2>Cartão emprestado (Maira, Rodiney, Cleyton)</h2><div class="m" style="margin-bottom:8px">Compras deles no seu cartão. 🟩 Pago (já te pagaram) · 🟥 Não pago. Não entram nas suas despesas nem no saldo.</div>
+<div class="row"><select id="tpe"><option>Maira</option><option>Rodiney</option><option>Cleyton</option></select><input id="tdesc" placeholder="Compra" style="flex:2 1 150px"><input id="tval" type="number" step="0.01" placeholder="Valor"><input id="tini" type="month"><input id="tpar" type="number" min="0" placeholder="Parcelas (0 = sem fim)"><button class="p" id="tadd">Adicionar</button></div>
+<div class="m" id="tres" style="margin:10px 0"></div><div id="tl"></div>
+<h2 style="margin-top:14px">Visão do ano</h2><div class="sc"><table><thead><tr><th>Mês</th><th>Maira</th><th>Rodiney</th><th>Cleyton</th></tr></thead><tbody id="tb"></tbody></table></div></div>
 <div class="card"><h2 id="anot">Pagamentos do ano</h2><div class="m" style="margin-bottom:8px">Só os boletos e pagamentos (os lançamentos marcados com 🧾). Compras dentro do cartão não entram aqui. 🟩 Pago · 🟥 Não pago. Toque em um valor para marcar.</div>
 <div class="sc"><table><thead id="ah"></thead><tbody id="ab"></tbody></table></div></div>
 <div class="card"><h2>Planejamento até dez/2027</h2><div class="big" id="plt"></div>
@@ -61,9 +65,9 @@ const firebaseConfig={apiKey:"AIzaSyA9CAw5fkwM5-wU5jKyXALJnM6oRig3ZVo",authDomai
 const $=i=>document.getElementById(i),brl=n=>n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 const CATS=["Lanches","Mercantil","Açaí","Almoço","Merenda","Shalom","Uber","Diversos"];
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
-let cart={},itens=[],gastos=[],metas={economia:20,orc:{}},subs=[];
+let terc=[],cart={},itens=[],gastos=[],metas={economia:20,orc:{}},subs=[];
 const hoje=new Date().toISOString().slice(0,10);
-$("mes").value=$("ii").value=hoje.slice(0,7);
+$("mes").value=$("ii").value=$("tini").value=hoje.slice(0,7);
 $("icat").innerHTML='<option value="">Categoria (opcional)</option>'+CATS.map(c=>`<option>${c}</option>`).join("");
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const mi=s=>{const[a,b]=s.split("-");return a*12+ +b};
@@ -81,6 +85,7 @@ onAuthStateChanged(auth,u=>{
  const er=e=>{$("err").textContent="Sem permissão ou erro: "+e.message;$("login").classList.remove("hide");$("app").classList.add("hide")};
  subs.push(onSnapshot(collection(db,"itens"),s=>{itens=s.docs.map(d=>({id:d.id,...d.data()}));render()},er));
  subs.push(onSnapshot(collection(db,"cartoes"),s=>{cart={};s.docs.forEach(d=>cart[d.id]=d.data());render()},er));
+ subs.push(onSnapshot(collection(db,"terceiros"),s=>{terc=s.docs.map(d=>({id:d.id,...d.data()}));render()},er));
 });
 
 function render(){
@@ -95,6 +100,14 @@ function render(){
  $("cart").textContent="Cartões em "+m.slice(5)+"/"+m.slice(0,4);
  const CY=m.slice(0,4),ct=[0,0,0];
  $("cb").innerHTML=Array.from({length:12},(_,k)=>{const mm=CY+"-"+String(k+1).padStart(2,"0"),v=(cart[mm]&&cart[mm].v)||[0,0,0];v.forEach((x,j)=>ct[j]+=x);return`<tr data-m="${mm}" style="cursor:pointer${mm===m?";font-weight:700":""}"><td>${String(k+1).padStart(2,"0")}/${CY}</td>${v.map(x=>"<td>"+(x?brl(x):"-")+"</td>").join("")}<td>${v.some(x=>x)?brl(v[0]+v[1]+v[2]):"-"}</td></tr>`}).join("")+`<tr><th>Total do ano</th>${ct.map(x=>"<th>"+brl(x)+"</th>").join("")}<th>${brl(ct[0]+ct[1]+ct[2])}</th></tr>`;}
+ {const TP=["Maira","Rodiney","Cleyton"],T=terc.filter(t=>ativo(t,m));let rc=0,fr=0;
+ $("tl").innerHTML=TP.map(n=>{const L=T.filter(t=>t.pessoa===n);if(!L.length)return"";let r=0,f=0;
+  const rows=L.map(t=>{const v=val(t,m),ok=pg(t,m);ok?r+=v:f+=v;return`<tr class="${ok?"rp":"rn"}"><td>${esc(t.desc)}</td><td class="m">${t.parcelas>1?(mi(m)-mi(t.inicio)+1)+"/"+t.parcelas:""}</td><td>${brl(v)}</td><td><button class="x" data-a="tpg" data-id="${t.id}">${ok?"✅":"⬜"}</button><button class="x" data-a="taj" data-id="${t.id}">✎</button><button class="x" data-a="del" data-c="terceiros" data-id="${t.id}">✕</button></td></tr>`}).join("");
+  rc+=r;fr+=f;
+  return`<div style="margin-bottom:10px"><b>${n}</b> <span class="m">Recebido <span class="r">${brl(r)}</span> · Falta receber <span class="d">${brl(f)}</span></span><div class="sc"><table><tbody>${rows}</tbody></table></div></div>`}).join("")||'<div class="m">Nenhum lançamento neste mês.</div>';
+ $("tres").innerHTML=`Total do mês: recebido <b class="r">${brl(rc)}</b> · falta receber <b class="d">${brl(fr)}</b>`;
+ const TY=m.slice(0,4);
+ $("tb").innerHTML=Array.from({length:12},(_,k)=>{const mm=TY+"-"+String(k+1).padStart(2,"0");return`<tr data-m="${mm}" style="cursor:pointer${mm===m?";font-weight:700":""}"><td>${String(k+1).padStart(2,"0")}/${TY}</td>${TP.map(n=>{const L=terc.filter(t=>t.pessoa===n&&ativo(t,mm));if(!L.length)return'<td class="m">-</td>';const tot=L.reduce((a,t)=>a+val(t,mm),0),ok=L.every(t=>pg(t,mm));return`<td><span class="cel ${ok?"cp":"cn"}" style="display:block">${brl(tot)}</span></td>`}).join("")}</tr>`}).join("");}
  let ps=0,pn=0;I.forEach(i=>{if(i.grupo!=="receita"&&bol(i)){const v=val(i,m)*pw(i);pg(i,m)?ps+=v:pn+=v}});
  $("pgres").innerHTML=`Pago <b class="r">${brl(ps)}</b> · Falta pagar <b class="d">${brl(pn)}</b>`;
  const Y=m.slice(0,4),MN=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"],mk=k=>Y+"-"+String(k+1).padStart(2,"0");
@@ -115,9 +128,12 @@ function render(){
   return`<div style="margin-bottom:9px"><div class="row" style="justify-content:space-between"><span>${c}</span><span class="m" style="text-align:right">${brl(g)}</span></div><div class="bar"><i style="width:${pc}%;background:${cor}"></i></div></div>`}).join("");
 }
 $("mes").onchange=$("pes").onchange=render;
+$("tadd").onclick=async()=>{const v=parseFloat($("tval").value);if(!v||!$("tdesc").value||!$("tini").value)return alert("Preencha compra, valor e mês inicial.");await addDoc(collection(db,"terceiros"),{pessoa:$("tpe").value,desc:$("tdesc").value,valor:v,inicio:$("tini").value,parcelas:+$("tpar").value||0});$("tdesc").value=$("tval").value=""};
 $("sc").onclick=()=>setDoc(doc(db,"cartoes",$("mes").value),{v:[0,1,2].map(k=>parseFloat($("c"+k).value)||0),at:new Date().toISOString().slice(0,10)});
 document.body.onclick=async e=>{const tr=e.target.closest("tr[data-m]");if(tr){$("mes").value=tr.dataset.m;render();return}const b=e.target.closest("button[data-a]");if(!b)return;const{a,id,c}=b.dataset;
  if(a==="del"&&confirm("Excluir este lançamento?"))await deleteDoc(doc(db,c,id));
+ if(a==="tpg"){const mm=$("mes").value,t=terc.find(x=>x.id===id);await updateDoc(doc(db,"terceiros",id),{["pago."+mm]:!pg(t,mm)})}
+ if(a==="taj"){const mm=$("mes").value,t=terc.find(x=>x.id===id),v=prompt("Valor para "+mm+":",val(t,mm));if(v!==null&&!isNaN(parseFloat(v.replace(",","."))))await updateDoc(doc(db,"terceiros",id),{["aj."+mm]:parseFloat(v.replace(",","."))})}
  if(a==="bol"){const it=itens.find(x=>x.id===id);await updateDoc(doc(db,"itens",id),{boleto:!it.boleto})}
  if(a==="pg"){const mm=b.dataset.m||$("mes").value,it=itens.find(x=>x.id===id);await updateDoc(doc(db,"itens",id),{["pago."+mm]:!pg(it,mm)})}
  if(a==="aj"){const m=$("mes").value,it=itens.find(x=>x.id===id),v=prompt("Valor para "+m+":",val(it,m));if(v!==null&&!isNaN(parseFloat(v)))await updateDoc(doc(db,"itens",id),{["aj."+m]:parseFloat(v.replace(",","."))})}};
