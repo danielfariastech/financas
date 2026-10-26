@@ -126,7 +126,7 @@ function render(){
  $("kr").textContent=brl(rec);$("kd").textContent=brl(des);$("ks").textContent=brl(sal);$("ks").className="big "+(sal>=0?"r":"d");
  $("ke").textContent=eco.toFixed(1)+"%";$("ke").className="big "+(eco>=0?"r":"d");
  $("li").innerHTML=I.map(i=>`<tr class="${i.grupo==="receita"||!bol(i)?"":(pg(i,m)?"rp":"rn")}"><td>${i.dia?"Dia "+i.dia:""}</td><td>${esc(i.desc)}</td><td class="m">${nome[i.grupo]}${i.grupo==="cartao"?" (só pagamento)":""} · ${i.pessoa}${i.cat?" · "+i.cat:""}${pw(i)===.5?" ½":""}${i.parcelas>1?` · ${mi(m)-mi(i.inicio)+1}/${i.parcelas}`:""}</td><td class="${i.grupo==="receita"?"r":""}">${brl(val(i,m)*pw(i))}</td><td>${i.grupo==="receita"||i.grupo==="avulsa"?"":`${bol(i)?`<button class="x" data-a="pg" data-id="${i.id}">${pg(i,m)?"✅":"⬜"}</button>`:""}<button class="x" data-a="bol" data-id="${i.id}" title="Boleto a pagar" style="opacity:${bol(i)?1:.35}">🧾</button>`}<button class="x" data-a="aj" data-id="${i.id}">✎</button><button class="x" data-a="del" data-c="itens" data-id="${i.id}">✕</button></td></tr>`).join("")||'<tr><td class="m">Nada neste mês.</td></tr>';
- $("orc").innerHTML=CATS.map(c=>{const g=por[c]||0,pc=des?g/des*100:0,cor="var(--ac)";
+ $("orc").innerHTML=CATS.slice().sort((x,y)=>(por[y]||0)-(por[x]||0)).map(c=>{const g=por[c]||0,pc=des?g/des*100:0,cor="var(--ac)";
   return`<div style="margin-bottom:9px"><div class="row" style="justify-content:space-between"><span>${c}</span><span class="m" style="text-align:right">${brl(g)}</span></div><div class="bar"><i style="width:${pc}%;background:${cor}"></i></div></div>`}).join("");
 }
 $("mes").onchange=$("pes").onchange=render;
