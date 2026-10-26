@@ -40,6 +40,11 @@ button{cursor:pointer}.p{background:var(--ac);color:#fff;border-color:var(--ac)}
 <div class="card"><h2>Lançamentos do mês <span class="m">(✎ ajusta o valor só neste mês · 🧾 marca como boleto · ⬜/✅ marca pago)</span></h2><div class="m" style="margin-bottom:8px">🟩 Pago &nbsp; 🟥 Não pago &nbsp;·&nbsp; <span id="pgres"></span></div><div class="sc"><table><tbody id="li"></tbody></table></div></div>
 <div class="card"><h2>Gastos por categoria</h2><div id="orc"></div>
 </div></div>
+<div class="card"><h2 id="anot">Pagamentos do ano</h2><div class="m" style="margin-bottom:8px">Só os boletos e pagamentos (os lançamentos marcados com 🧾). Compras dentro do cartão não entram aqui. 🟩 Pago · 🟥 Não pago. Toque em um valor para marcar.</div>
+<div class="sc"><table><thead id="ah"></thead><tbody id="ab"></tbody></table></div></div>
+<div class="card"><h2>Planejamento até dez/2027</h2><div class="big" id="plt"></div>
+<div class="m" style="margin-bottom:8px">Sobra = receitas − despesas já cadastradas em cada mês. Toque em um mês para abri-lo. Fixas e receitas "sem fim" se repetem até dez/2027. Faturas de cartão não somam nas despesas, porque as compras já entram.</div>
+<div class="sc"><table><thead><tr><th>Mês</th><th>Receitas</th><th>Despesas</th><th>Pode gastar</th><th>Acumulado</th></tr></thead><tbody id="pl"></tbody></table></div></div>
 <div class="card"><h2 id="cart">Cartões</h2><div class="m" style="margin-bottom:8px">Atualize toda semana quanto já usou em cada cartão neste mês (o valor novo substitui o anterior).</div>
 <div class="row"><label class="m" style="flex:1 1 120px;display:grid;gap:4px">Amazon<input id="c0" type="number" step="0.01"></label><label class="m" style="flex:1 1 120px;display:grid;gap:4px">Porto<input id="c1" type="number" step="0.01"></label><label class="m" style="flex:1 1 120px;display:grid;gap:4px">Inter<input id="c2" type="number" step="0.01"></label><button class="p" id="sc" style="align-self:end">Salvar</button></div>
 <div class="m" id="cup" style="margin:6px 0 10px"></div>
@@ -48,11 +53,6 @@ button{cursor:pointer}.p{background:var(--ac);color:#fff;border-color:var(--ac)}
 <div class="row"><select id="tpe"><option>Maira</option><option>Rodiney</option><option>Cleyton</option></select><input id="tdesc" placeholder="Compra" style="flex:2 1 150px"><input id="tval" type="number" step="0.01" placeholder="Valor"><input id="tini" type="month"><input id="tpar" type="number" min="0" placeholder="Parcelas (0 = sem fim)"><button class="p" id="tadd">Adicionar</button></div>
 <div class="m" id="tres" style="margin:10px 0"></div><div id="tl"></div>
 <h2 style="margin-top:14px">Visão do ano</h2><div class="sc"><table><thead><tr><th>Mês</th><th>Maira</th><th>Rodiney</th><th>Cleyton</th></tr></thead><tbody id="tb"></tbody></table></div></div>
-<div class="card"><h2 id="anot">Pagamentos do ano</h2><div class="m" style="margin-bottom:8px">Só os boletos e pagamentos (os lançamentos marcados com 🧾). Compras dentro do cartão não entram aqui. 🟩 Pago · 🟥 Não pago. Toque em um valor para marcar.</div>
-<div class="sc"><table><thead id="ah"></thead><tbody id="ab"></tbody></table></div></div>
-<div class="card"><h2>Planejamento até dez/2027</h2><div class="big" id="plt"></div>
-<div class="m" style="margin-bottom:8px">Sobra = receitas − despesas já cadastradas em cada mês. Toque em um mês para abri-lo. Fixas e receitas "sem fim" se repetem até dez/2027. Faturas de cartão não somam nas despesas, porque as compras já entram.</div>
-<div class="sc"><table><thead><tr><th>Mês</th><th>Receitas</th><th>Despesas</th><th>Pode gastar</th><th>Acumulado</th></tr></thead><tbody id="pl"></tbody></table></div></div>
 </div>
 
 <script type="module">
