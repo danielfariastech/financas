@@ -44,7 +44,7 @@ button{cursor:pointer}.p{background:var(--ac);color:#fff;border-color:var(--ac)}
 <div class="sc"><table><thead id="ah"></thead><tbody id="ab"></tbody></table></div></div>
 <div class="card"><h2>Planejamento até dez/2027</h2><div class="big" id="plt"></div>
 <div class="m" style="margin-bottom:8px">Sobra = receitas − despesas já cadastradas em cada mês. Toque em um mês para abri-lo. Fixas e receitas "sem fim" se repetem até dez/2027. Faturas de cartão não somam nas despesas, porque as compras já entram.</div>
-<div class="sc"><table><thead><tr><th>Mês</th><th>Receitas</th><th>Despesas</th><th>Pode gastar</th><th>Acumulado</th></tr></thead><tbody id="pl"></tbody></table></div></div>
+<div class="sc"><table><thead><tr><th>Mês</th><th>Receitas</th><th>Despesas</th><th>Pode gastar</th></tr></thead><tbody id="pl"></tbody></table></div></div>
 <div class="card"><h2 id="cart">Cartões</h2><div class="m" style="margin-bottom:8px">Atualize toda semana quanto já usou em cada cartão neste mês (o valor novo substitui o anterior).</div>
 <div class="row"><label class="m" style="flex:1 1 120px;display:grid;gap:4px">Amazon<input id="c0" type="number" step="0.01"></label><label class="m" style="flex:1 1 120px;display:grid;gap:4px">Porto<input id="c1" type="number" step="0.01"></label><label class="m" style="flex:1 1 120px;display:grid;gap:4px">Inter<input id="c2" type="number" step="0.01"></label><button class="p" id="sc" style="align-self:end">Salvar</button></div>
 <div class="m" id="cup" style="margin:6px 0 10px"></div>
@@ -120,8 +120,8 @@ function render(){
  $("ab").innerHTML=AD.map(i=>"<tr><td>"+(i.dia||"")+"</td><td>"+esc(i.desc)+"</td>"+MN.map((_,k)=>{const mm=mk(k);if(!ativo(i,mm))return'<td class="m">-</td>';const v=val(i,mm)*pw(i);tt[k]+=v;if(pg(i,mm))tp[k]+=v;return`<td><button class="cel ${pg(i,mm)?"cp":"cn"}" data-a="pg" data-id="${i.id}" data-m="${mm}">${brl(v)}</button></td>`}).join("")+"</tr>").join("")+"<tr><th></th><th>Total</th>"+tt.map(v=>"<th>"+brl(v)+"</th>").join("")+"</tr><tr><th></th><th>Falta pagar</th>"+tt.map((v,k)=>'<th class="d">'+brl(v-tp[k])+"</th>").join("")+"</tr>";
  let y=+hoje.slice(0,4),mo=+hoje.slice(5,7),acc=0,TR=0,TD=0,rows="";
  while(y<2028){const mm=y+"-"+String(mo).padStart(2,"0"),[r,d]=tot(mm);acc+=r-d;TR+=r;TD+=d;
-  rows+=`<tr data-m="${mm}" style="cursor:pointer"><td>${String(mo).padStart(2,"0")}/${y}</td><td class="r">${brl(r)}</td><td class="d">${brl(d)}</td><td class="${r-d>=0?"r":"d"}">${brl(r-d)}</td><td class="${acc>=0?"r":"d"}">${brl(acc)}</td></tr>`;if(++mo>12){mo=1;y++}}
- $("pl").innerHTML=rows+`<tr><th>Total</th><th class="r">${brl(TR)}</th><th class="d">${brl(TD)}</th><th class="${TR-TD>=0?"r":"d"}">${brl(TR-TD)}</th><th></th></tr>`;
+  rows+=`<tr data-m="${mm}" style="cursor:pointer"><td>${String(mo).padStart(2,"0")}/${y}</td><td class="r">${brl(r)}</td><td class="d">${brl(d)}</td><td class="${r-d>=0?"r":"d"}">${brl(r-d)}</td></tr>`;if(++mo>12){mo=1;y++}}
+ $("pl").innerHTML=rows+`<tr><th>Total</th><th class="r">${brl(TR)}</th><th class="d">${brl(TD)}</th><th class="${TR-TD>=0?"r":"d"}">${brl(TR-TD)}</th></tr>`;
  $("plt").innerHTML=`Ainda pode gastar até dez/2027: <span class="${acc>=0?"r":"d"}">${brl(acc)}</span>`;
  $("kr").textContent=brl(rec);$("kd").textContent=brl(des);$("ks").textContent=brl(sal);$("ks").className="big "+(sal>=0?"r":"d");
  $("ke").textContent=eco.toFixed(1)+"%";$("ke").className="big "+(eco>=0?"r":"d");
