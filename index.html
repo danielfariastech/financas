@@ -33,7 +33,7 @@ button{cursor:pointer}.p{background:var(--ac);color:#fff;border-color:var(--ac)}
 <select id="ig"><option value="fixa">Despesa fixa</option><option value="parcela">Parcelada</option><option value="avulsa">Gasto avulso (1 vez)</option><option value="cartao">Fatura de cartão</option><option value="receita">Receita</option></select>
 <input id="id" placeholder="Descrição" style="flex:2 1 160px"><input id="iv" type="number" step="0.01" placeholder="Valor">
 <input id="idia" type="number" min="1" max="31" placeholder="Dia"><input id="ii" type="month"><input id="ip" type="number" min="0" placeholder="Parcelas (0 = sem fim)">
-<select id="ipe"><option>Diversos</option><option>Daniel</option><option>Regiane</option></select><select id="icat"></select><button class="p" id="ai">Adicionar</button></div></div>
+<select id="ipe"><option>Diversos</option><option>Daniel</option><option>Regiane</option></select><label class="m" id="lcomp" style="flex:1 1 150px;display:none;gap:4px">Data da compra<input id="icomp" type="date"></label><select id="icat"></select><button class="p" id="ai">Adicionar</button></div></div>
 </div>
 
 <div class="g">
@@ -127,11 +127,12 @@ function render(){
  $("plt").innerHTML=`Ainda pode gastar até dez/2027: <span class="${acc>=0?"r":"d"}">${brl(acc)}</span>`;
  $("kr").textContent=brl(rec);$("kd").textContent=brl(des);$("ks").textContent=brl(sal);$("ks").className="big "+(sal>=0?"r":"d");
  $("ke").textContent=eco.toFixed(1)+"%";$("ke").className="big "+(eco>=0?"r":"d");
- $("li").innerHTML=I.map(i=>`<tr class="${i.grupo==="receita"||!bol(i)?"":(pg(i,m)?"rp":"rn")}"><td>${i.dia?"Dia "+i.dia:""}</td><td>${esc(i.desc)}</td><td class="m">${nome[i.grupo]}${i.grupo==="cartao"?" (só pagamento)":""} · ${i.pessoa}${i.cat?" · "+i.cat:""}${pw(i)===.5?" ½":""}${i.parcelas>1?` · ${mi(m)-mi(i.inicio)+1}/${i.parcelas}`:""}</td><td class="${i.grupo==="receita"?"r":""}">${brl(val(i,m)*pw(i))}</td><td>${bol(i)?`<button class="x" data-a="pg" data-id="${i.id}">${pg(i,m)?"✅":"⬜"}</button>`:""}<button class="x" data-a="aj" data-id="${i.id}">✎</button><button class="x" data-a="del" data-c="itens" data-id="${i.id}">✕</button></td></tr>`).join("")||'<tr><td class="m">Nada neste mês.</td></tr>';
+ $("li").innerHTML=I.map(i=>`<tr class="${i.grupo==="receita"||!bol(i)?"":(pg(i,m)?"rp":"rn")}"><td>${i.dia?"Dia "+i.dia:""}</td><td>${esc(i.desc)}</td><td class="m">${nome[i.grupo]}${i.grupo==="cartao"?" (só pagamento)":""} · ${i.pessoa}${i.cat?" · "+i.cat:""}${pw(i)===.5?" ½":""}${i.parcelas>1?` · ${mi(m)-mi(i.inicio)+1}/${i.parcelas}`:""}${i.compra?" · compra "+i.compra.split("-").reverse().join("/"):""}</td><td class="${i.grupo==="receita"?"r":""}">${brl(val(i,m)*pw(i))}</td><td>${bol(i)?`<button class="x" data-a="pg" data-id="${i.id}">${pg(i,m)?"✅":"⬜"}</button>`:""}<button class="x" data-a="aj" data-id="${i.id}">✎</button><button class="x" data-a="del" data-c="itens" data-id="${i.id}">✕</button></td></tr>`).join("")||'<tr><td class="m">Nada neste mês.</td></tr>';
  $("orc").innerHTML=CATS.slice().sort((x,y)=>(por[y]||0)-(por[x]||0)).map(c=>{const g=por[c]||0,pc=des?g/des*100:0,cor="var(--ac)";
   return`<div style="margin-bottom:9px"><div class="row" style="justify-content:space-between"><span>${c}</span><span class="m" style="text-align:right">${brl(g)}</span></div><div class="bar"><i style="width:${pc}%;background:${cor}"></i></div></div>`}).join("");
 }
-$("mes").onchange=$("pes").onchange=render;$("lm").onclick=async()=>{const m=$("mes").value,lbl=m.slice(5)+"/"+m.slice(0,4);
+$("mes").onchange=$("pes").onchange=render;
+$("ig").onchange=()=>{$("lcomp").style.display=$("ig").value==="parcela"?"grid":"none"};$("lm").onclick=async()=>{const m=$("mes").value,lbl=m.slice(5)+"/"+m.slice(0,4);
  if(!confirm("Apagar TUDO de "+lbl+"? O que continua nos meses seguintes passa a começar no mês seguinte. Não dá para desfazer."))return;
  if(prompt("Para confirmar, digite "+lbl)!==lbl)return;
  const nx=mm=>{let[y,k]=mm.split("-").map(Number);k++;if(k>12){k=1;y++}return y+"-"+String(k).padStart(2,"0")};
@@ -149,5 +150,5 @@ document.body.onclick=async e=>{const tr=e.target.closest("tr[data-m]");if(tr){$
  if(a==="pg"){const mm=b.dataset.m||$("mes").value,it=itens.find(x=>x.id===id);await updateDoc(doc(db,"itens",id),{["pago."+mm]:!pg(it,mm)})}
  if(a==="aj"){const m=$("mes").value,it=itens.find(x=>x.id===id),v=prompt("Valor para "+m+":",val(it,m));if(v!==null&&!isNaN(parseFloat(v)))await updateDoc(doc(db,"itens",id),{["aj."+m]:parseFloat(v.replace(",","."))})}};
 $("ai").onclick=async()=>{const v=parseFloat($("iv").value);if(!v||!$("id").value||!$("ii").value)return alert("Preencha descrição, valor e mês inicial.");
- await addDoc(collection(db,"itens"),{grupo:$("ig").value,desc:$("id").value,valor:v,dia:+$("idia").value||0,inicio:$("ii").value,parcelas:$("ig").value==="avulsa"?1:+$("ip").value||0,cat:$("icat").value,pessoa:$("ipe").value});$("id").value=$("iv").value=""};
+ await addDoc(collection(db,"itens"),{grupo:$("ig").value,desc:$("id").value,valor:v,dia:+$("idia").value||0,inicio:$("ii").value,parcelas:$("ig").value==="avulsa"?1:+$("ip").value||0,cat:$("icat").value,pessoa:$("ipe").value,compra:$("ig").value==="parcela"?$("icomp").value:""});$("icomp").value="";$("id").value=$("iv").value=""};
 </script></main></body></html>
