@@ -132,7 +132,7 @@ function render(){
   return`<div style="margin-bottom:9px"><div class="row" style="justify-content:space-between"><span>${c}</span><span class="m" style="text-align:right">${brl(g)}</span></div><div class="bar"><i style="width:${pc}%;background:${cor}"></i></div></div>`}).join("");
 }
 $("mes").onchange=$("pes").onchange=render;
-$("ig").onchange=()=>{$("lcomp").style.display=$("ig").value==="parcela"?"grid":"none"};$("lm").onclick=async()=>{const m=$("mes").value,lbl=m.slice(5)+"/"+m.slice(0,4);
+$("ig").onchange=()=>{$("lcomp").style.display=["parcela","avulsa"].includes($("ig").value)?"grid":"none"};$("lm").onclick=async()=>{const m=$("mes").value,lbl=m.slice(5)+"/"+m.slice(0,4);
  if(!confirm("Apagar TUDO de "+lbl+"? O que continua nos meses seguintes passa a começar no mês seguinte. Não dá para desfazer."))return;
  if(prompt("Para confirmar, digite "+lbl)!==lbl)return;
  const nx=mm=>{let[y,k]=mm.split("-").map(Number);k++;if(k>12){k=1;y++}return y+"-"+String(k).padStart(2,"0")};
@@ -150,5 +150,5 @@ document.body.onclick=async e=>{const tr=e.target.closest("tr[data-m]");if(tr){$
  if(a==="pg"){const mm=b.dataset.m||$("mes").value,it=itens.find(x=>x.id===id);await updateDoc(doc(db,"itens",id),{["pago."+mm]:!pg(it,mm)})}
  if(a==="aj"){const m=$("mes").value,it=itens.find(x=>x.id===id),v=prompt("Valor para "+m+":",val(it,m));if(v!==null&&!isNaN(parseFloat(v)))await updateDoc(doc(db,"itens",id),{["aj."+m]:parseFloat(v.replace(",","."))})}};
 $("ai").onclick=async()=>{const v=parseFloat($("iv").value);if(!v||!$("id").value||!$("ii").value)return alert("Preencha descrição, valor e mês inicial.");
- await addDoc(collection(db,"itens"),{grupo:$("ig").value,desc:$("id").value,valor:v,dia:+$("idia").value||0,inicio:$("ii").value,parcelas:$("ig").value==="avulsa"?1:+$("ip").value||0,cat:$("icat").value,pessoa:$("ipe").value,compra:$("ig").value==="parcela"?$("icomp").value:""});$("icomp").value="";$("id").value=$("iv").value=""};
+ await addDoc(collection(db,"itens"),{grupo:$("ig").value,desc:$("id").value,valor:v,dia:+$("idia").value||0,inicio:$("ii").value,parcelas:$("ig").value==="avulsa"?1:+$("ip").value||0,cat:$("icat").value,pessoa:$("ipe").value,compra:["parcela","avulsa"].includes($("ig").value)?$("icomp").value:""});$("icomp").value="";$("id").value=$("iv").value=""};
 </script></main></body></html>
