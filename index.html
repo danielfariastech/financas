@@ -48,7 +48,7 @@ button{cursor:pointer}.p{background:var(--ac);color:#fff;border-color:var(--ac)}
 <div class="card"><h2 id="cart">Cartões</h2><div class="m" style="margin-bottom:8px">Atualize toda semana quanto já usou em cada cartão neste mês (o valor novo substitui o anterior).</div>
 <div class="row"><label class="m" style="flex:1 1 120px;display:grid;gap:4px">Amazon<input id="c0" type="number" step="0.01"></label><label class="m" style="flex:1 1 120px;display:grid;gap:4px">Porto<input id="c1" type="number" step="0.01"></label><label class="m" style="flex:1 1 120px;display:grid;gap:4px">Inter<input id="c2" type="number" step="0.01"></label><button class="p" id="sc" style="align-self:end">Salvar</button></div>
 <div class="m" id="cup" style="margin:6px 0 10px"></div>
-<div class="sc"><table><thead><tr><th>Mês</th><th>Amazon</th><th>Porto</th><th>Inter</th></tr></thead><tbody id="cb"></tbody></table></div></div>
+<div class="sc"><table><thead><tr><th>Mês</th><th>Amazon</th><th>Porto</th><th>Inter</th><th>Total</th></tr></thead><tbody id="cb"></tbody></table></div></div>
 <div class="card"><h2>Cartão emprestado (Maira, Rodiney, Cleyton)</h2><div class="m" style="margin-bottom:8px">Compras deles no seu cartão. 🟩 Pago (já te pagaram) · 🟥 Não pago. Não entram nas suas despesas nem no saldo.</div>
 <div class="row"><select id="tpe"><option>Maira</option><option>Rodiney</option><option>Cleyton</option></select><input id="tdesc" placeholder="Compra" style="flex:2 1 150px"><input id="tval" type="number" step="0.01" placeholder="Valor"><input id="tini" type="month"><input id="tpar" type="number" min="0" placeholder="Parcelas (0 = sem fim)"><button class="p" id="tadd">Adicionar</button></div>
 <div class="m" id="tres" style="margin:10px 0"></div><div id="tl"></div>
@@ -84,8 +84,7 @@ onAuthStateChanged(auth,u=>{
  subs.forEach(f=>f());subs=[];
  $("login").classList.toggle("hide",!!u);$("app").classList.toggle("hide",!u);
  if(!u)return;
- const isR=/regiane/i.test(u.email||"");$("pes").value=isR?"Regiane":"Daniel";
- ["pl","cb","tl"].forEach(id=>$(id).closest(".card").style.display=isR?"none":"");
+ const isR=/regiane/i.test(u.email||"");document.body.dataset.r=isR?"1":"";$("pes").value=isR?"Regiane":"Daniel";$("pes").disabled=isR;
  const er=e=>{$("err").textContent="Sem permissão ou erro: "+e.message;$("login").classList.remove("hide");$("app").classList.add("hide")};
  subs.push(onSnapshot(collection(db,"itens"),s=>{itens=s.docs.map(d=>({id:d.id,...d.data()}));render()},er));
  subs.push(onSnapshot(collection(db,"cartoes"),s=>{cart={};s.docs.forEach(d=>cart[d.id]=d.data());render()},er));
@@ -103,7 +102,7 @@ function render(){
  $("cup").textContent=c?"Última atualização: "+c.at.split("-").reverse().join("/"):"Ainda sem valores neste mês.";
  $("cart").textContent="Cartões em "+m.slice(5)+"/"+m.slice(0,4);
  const CY=m.slice(0,4),ct=[0,0,0];
- $("cb").innerHTML=Array.from({length:13},(_,k)=>{const t=2026*12+10+k,yy=Math.floor(t/12),mn=t%12+1,mm=yy+"-"+String(mn).padStart(2,"0"),v=(cart[mm]&&cart[mm].v)||[0,0,0];v.forEach((x,j)=>ct[j]+=x);return`<tr data-m="${mm}" style="cursor:pointer${mm===m?";font-weight:700":""}"><td>${String(mn).padStart(2,"0")}/${yy}</td>${v.map(x=>"<td>"+(x?brl(x):"-")+"</td>").join("")}</tr>`}).join("")+`<tr><th>Total nov/26 a nov/27</th>${ct.map(x=>"<th>"+brl(x)+"</th>").join("")}</tr>`;}
+ $("cb").innerHTML=Array.from({length:13},(_,k)=>{const t=2026*12+10+k,yy=Math.floor(t/12),mn=t%12+1,mm=yy+"-"+String(mn).padStart(2,"0"),v=(cart[mm]&&cart[mm].v)||[0,0,0];v.forEach((x,j)=>ct[j]+=x);return`<tr data-m="${mm}" style="cursor:pointer${mm===m?";font-weight:700":""}"><td>${String(mn).padStart(2,"0")}/${yy}</td>${v.map(x=>"<td>"+(x?brl(x):"-")+"</td>").join("")}<td>${v.some(x=>x)?brl(v[0]+v[1]+v[2]):"-"}</td></tr>`}).join("");}
  {const TP=["Maira","Rodiney","Cleyton"],T=terc.filter(t=>ativo(t,m));let rc=0,fr=0;
  $("tl").innerHTML=TP.map(n=>{const L=T.filter(t=>t.pessoa===n);if(!L.length)return"";let r=0,f=0;
   const rows=L.map(t=>{const v=val(t,m),ok=pg(t,m);ok?r+=v:f+=v;return`<tr class="${ok?"rp":"rn"}"><td>${esc(t.desc)}</td><td class="m">${t.parcelas>1?(mi(m)-mi(t.inicio)+1)+"/"+t.parcelas:""}</td><td>${brl(v)}</td><td><button class="x" data-a="tpg" data-id="${t.id}">${ok?"✅":"⬜"}</button><button class="x" data-a="taj" data-id="${t.id}">✎</button><button class="x" data-a="del" data-c="terceiros" data-id="${t.id}">✕</button></td></tr>`}).join("");
@@ -112,6 +111,7 @@ function render(){
  $("tres").innerHTML=`Total do mês: recebido <b class="r">${brl(rc)}</b> · falta receber <b class="d">${brl(fr)}</b>`;
  const TY=m.slice(0,4);
  $("tb").innerHTML=Array.from({length:13},(_,k)=>{const t=2026*12+10+k,yy=Math.floor(t/12),mn=t%12+1,mm=yy+"-"+String(mn).padStart(2,"0");return`<tr data-m="${mm}" style="cursor:pointer${mm===m?";font-weight:700":""}"><td>${String(mn).padStart(2,"0")}/${yy}</td>${TP.map(n=>{const L=terc.filter(t=>t.pessoa===n&&ativo(t,mm));if(!L.length)return'<td class="m">-</td>';const tot=L.reduce((a,t)=>a+val(t,mm),0),ok=L.every(t=>pg(t,mm));return`<td><span class="cel ${ok?"cp":"cn"}" style="display:block">${brl(tot)}</span></td>`}).join("")}</tr>`}).join("");}
+ ["pl","cb","tl"].forEach(id=>$(id).closest(".card").style.display=document.body.dataset.r||p==="Regiane"?"none":"");
  let ps=0,pn=0;I.forEach(i=>{if(i.grupo!=="receita"&&bol(i)){const v=val(i,m)*pw(i);pg(i,m)?ps+=v:pn+=v}});
  $("pgres").innerHTML=`Pago <b class="r">${brl(ps)}</b> · Falta pagar <b class="d">${brl(pn)}</b>`;
  const Y=m.slice(0,4),MN=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"],mk=k=>Y+"-"+String(k+1).padStart(2,"0");
