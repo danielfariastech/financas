@@ -33,14 +33,14 @@ button{cursor:pointer}.p{background:var(--ac);color:#fff;border-color:var(--ac)}
 <select id="ig"><option value="fixa">Despesa fixa</option><option value="parcela">Parcelada</option><option value="avulsa">Gasto avulso (1 vez)</option><option value="cartao">Fatura de cartão</option><option value="receita">Receita</option></select>
 <input id="id" placeholder="Descrição" style="flex:2 1 160px"><input id="iv" type="number" step="0.01" placeholder="Valor">
 <input id="idia" type="number" min="1" max="31" placeholder="Dia"><input id="ii" type="month"><input id="ip" type="number" min="0" placeholder="Parcelas (0 = sem fim)">
-<select id="ipe"><option>Diversos</option><option>Daniel</option><option>Regiane</option></select><select id="icat"></select><label class="m" id="lbol" style="flex:1 1 150px"><input type="checkbox" id="ibol" style="width:auto"> Boleto a pagar</label><button class="p" id="ai">Adicionar</button></div></div>
+<select id="ipe"><option>Diversos</option><option>Daniel</option><option>Regiane</option></select><select id="icat"></select><button class="p" id="ai">Adicionar</button></div></div>
 </div>
 
 <div class="g">
-<div class="card"><h2>Lançamentos do mês <span class="m">(✎ ajusta o valor só neste mês · 🧾 marca como boleto · ⬜/✅ marca pago)</span></h2><div class="m" style="margin-bottom:8px">🟩 Pago &nbsp; 🟥 Não pago &nbsp;·&nbsp; <span id="pgres"></span></div><div class="sc"><table><tbody id="li"></tbody></table></div></div>
+<div class="card"><h2>Lançamentos do mês <span class="m">(✎ ajusta o valor só neste mês · ⬜/✅ marca despesa fixa como paga)</span></h2><div class="m" style="margin-bottom:8px">🟩 Pago &nbsp; 🟥 Não pago &nbsp;·&nbsp; <span id="pgres"></span></div><div class="sc"><table><tbody id="li"></tbody></table></div></div>
 <div class="card"><h2>Gastos por categoria</h2><div id="orc"></div>
 </div></div>
-<div class="card"><h2 id="anot">Pagamentos do ano</h2><div class="m" style="margin-bottom:8px">Só os boletos e pagamentos (os lançamentos marcados com 🧾). Compras dentro do cartão não entram aqui. 🟩 Pago · 🟥 Não pago. Toque em um valor para marcar.</div>
+<div class="card"><h2 id="anot">Despesas fixas</h2><div class="m" style="margin-bottom:8px">Só as despesas fixas (as faturas de cartão não entram). 🟩 Pago · 🟥 Não pago. Toque em um valor para marcar.</div>
 <div class="sc"><table><thead id="ah"></thead><tbody id="ab"></tbody></table></div></div>
 <div class="card"><h2>Planejamento até dez/2027</h2><div class="big" id="plt"></div>
 <div class="m" style="margin-bottom:8px">Sobra = receitas − despesas já cadastradas em cada mês. Toque em um mês para abri-lo. Fixas e receitas "sem fim" se repetem até dez/2027. Faturas de cartão não somam nas despesas, porque as compras já entram.</div>
@@ -48,7 +48,7 @@ button{cursor:pointer}.p{background:var(--ac);color:#fff;border-color:var(--ac)}
 <div class="card"><h2 id="cart">Cartões</h2><div class="m" style="margin-bottom:8px">Atualize toda semana quanto já usou em cada cartão neste mês (o valor novo substitui o anterior).</div>
 <div class="row"><label class="m" style="flex:1 1 120px;display:grid;gap:4px">Amazon<input id="c0" type="number" step="0.01"></label><label class="m" style="flex:1 1 120px;display:grid;gap:4px">Porto<input id="c1" type="number" step="0.01"></label><label class="m" style="flex:1 1 120px;display:grid;gap:4px">Inter<input id="c2" type="number" step="0.01"></label><button class="p" id="sc" style="align-self:end">Salvar</button></div>
 <div class="m" id="cup" style="margin:6px 0 10px"></div>
-<div class="sc"><table><thead><tr><th>Mês</th><th>Amazon</th><th>Porto</th><th>Inter</th><th>Total</th></tr></thead><tbody id="cb"></tbody></table></div></div>
+<div class="sc"><table><thead><tr><th>Mês</th><th>Amazon</th><th>Porto</th><th>Inter</th></tr></thead><tbody id="cb"></tbody></table></div></div>
 <div class="card"><h2>Cartão emprestado (Maira, Rodiney, Cleyton)</h2><div class="m" style="margin-bottom:8px">Compras deles no seu cartão. 🟩 Pago (já te pagaram) · 🟥 Não pago. Não entram nas suas despesas nem no saldo.</div>
 <div class="row"><select id="tpe"><option>Maira</option><option>Rodiney</option><option>Cleyton</option></select><input id="tdesc" placeholder="Compra" style="flex:2 1 150px"><input id="tval" type="number" step="0.01" placeholder="Valor"><input id="tini" type="month"><input id="tpar" type="number" min="0" placeholder="Parcelas (0 = sem fim)"><button class="p" id="tadd">Adicionar</button></div>
 <div class="m" id="tres" style="margin:10px 0"></div><div id="tl"></div>
@@ -74,7 +74,7 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",
 const mi=s=>{const[a,b]=s.split("-");return a*12+ +b};
 const ativo=(it,m)=>{const d=mi(m)-mi(it.inicio);return d>=0&&(!it.parcelas||d<it.parcelas)};
 const val=(it,m)=>it.aj&&it.aj[m]!=null?it.aj[m]:it.valor;
-const pg=(i,m)=>!!(i.pago&&i.pago[m]),bol=i=>i.grupo!=="avulsa"&&(!!i.boleto||i.grupo==="cartao");
+const pg=(i,m)=>!!(i.pago&&i.pago[m]),bol=i=>i.grupo==="fixa";
 const RK={receita:0,fixa:1,cartao:2,parcela:3,avulsa:4};
 const nome={fixa:"Fixa",parcela:"Parcela",cartao:"Cartão",avulsa:"Avulso",receita:"Receita"};
 
@@ -84,7 +84,8 @@ onAuthStateChanged(auth,u=>{
  subs.forEach(f=>f());subs=[];
  $("login").classList.toggle("hide",!!u);$("app").classList.toggle("hide",!u);
  if(!u)return;
- $("pes").value=/regiane/i.test(u.email||"")?"Regiane":"Daniel";
+ const isR=/regiane/i.test(u.email||"");$("pes").value=isR?"Regiane":"Daniel";
+ ["pl","cb","tl"].forEach(id=>$(id).closest(".card").style.display=isR?"none":"");
  const er=e=>{$("err").textContent="Sem permissão ou erro: "+e.message;$("login").classList.remove("hide");$("app").classList.add("hide")};
  subs.push(onSnapshot(collection(db,"itens"),s=>{itens=s.docs.map(d=>({id:d.id,...d.data()}));render()},er));
  subs.push(onSnapshot(collection(db,"cartoes"),s=>{cart={};s.docs.forEach(d=>cart[d.id]=d.data());render()},er));
@@ -102,7 +103,7 @@ function render(){
  $("cup").textContent=c?"Última atualização: "+c.at.split("-").reverse().join("/"):"Ainda sem valores neste mês.";
  $("cart").textContent="Cartões em "+m.slice(5)+"/"+m.slice(0,4);
  const CY=m.slice(0,4),ct=[0,0,0];
- $("cb").innerHTML=Array.from({length:13},(_,k)=>{const t=2026*12+10+k,yy=Math.floor(t/12),mn=t%12+1,mm=yy+"-"+String(mn).padStart(2,"0"),v=(cart[mm]&&cart[mm].v)||[0,0,0];v.forEach((x,j)=>ct[j]+=x);return`<tr data-m="${mm}" style="cursor:pointer${mm===m?";font-weight:700":""}"><td>${String(mn).padStart(2,"0")}/${yy}</td>${v.map(x=>"<td>"+(x?brl(x):"-")+"</td>").join("")}<td>${v.some(x=>x)?brl(v[0]+v[1]+v[2]):"-"}</td></tr>`}).join("")+`<tr><th>Total nov/26 a nov/27</th>${ct.map(x=>"<th>"+brl(x)+"</th>").join("")}<th>${brl(ct[0]+ct[1]+ct[2])}</th></tr>`;}
+ $("cb").innerHTML=Array.from({length:13},(_,k)=>{const t=2026*12+10+k,yy=Math.floor(t/12),mn=t%12+1,mm=yy+"-"+String(mn).padStart(2,"0"),v=(cart[mm]&&cart[mm].v)||[0,0,0];v.forEach((x,j)=>ct[j]+=x);return`<tr data-m="${mm}" style="cursor:pointer${mm===m?";font-weight:700":""}"><td>${String(mn).padStart(2,"0")}/${yy}</td>${v.map(x=>"<td>"+(x?brl(x):"-")+"</td>").join("")}</tr>`}).join("")+`<tr><th>Total nov/26 a nov/27</th>${ct.map(x=>"<th>"+brl(x)+"</th>").join("")}</tr>`;}
  {const TP=["Maira","Rodiney","Cleyton"],T=terc.filter(t=>ativo(t,m));let rc=0,fr=0;
  $("tl").innerHTML=TP.map(n=>{const L=T.filter(t=>t.pessoa===n);if(!L.length)return"";let r=0,f=0;
   const rows=L.map(t=>{const v=val(t,m),ok=pg(t,m);ok?r+=v:f+=v;return`<tr class="${ok?"rp":"rn"}"><td>${esc(t.desc)}</td><td class="m">${t.parcelas>1?(mi(m)-mi(t.inicio)+1)+"/"+t.parcelas:""}</td><td>${brl(v)}</td><td><button class="x" data-a="tpg" data-id="${t.id}">${ok?"✅":"⬜"}</button><button class="x" data-a="taj" data-id="${t.id}">✎</button><button class="x" data-a="del" data-c="terceiros" data-id="${t.id}">✕</button></td></tr>`}).join("");
@@ -114,7 +115,7 @@ function render(){
  let ps=0,pn=0;I.forEach(i=>{if(i.grupo!=="receita"&&bol(i)){const v=val(i,m)*pw(i);pg(i,m)?ps+=v:pn+=v}});
  $("pgres").innerHTML=`Pago <b class="r">${brl(ps)}</b> · Falta pagar <b class="d">${brl(pn)}</b>`;
  const Y=m.slice(0,4),MN=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"],mk=k=>Y+"-"+String(k+1).padStart(2,"0");
- $("anot").textContent="Pagamentos do ano "+Y;
+ $("anot").textContent="Despesas fixas "+Y;
  $("ah").innerHTML="<tr><th>Dia</th><th>Descrição</th>"+MN.map(n=>"<th>"+n+"</th>").join("")+"</tr>";
  const AD=itens.filter(i=>i.grupo!=="receita"&&bol(i)&&pw(i)>0&&MN.some((_,k)=>ativo(i,mk(k)))).sort((a,b)=>(a.dia||0)-(b.dia||0)||a.desc.localeCompare(b.desc));
  const tt=Array(12).fill(0),tp=Array(12).fill(0);
@@ -126,13 +127,11 @@ function render(){
  $("plt").innerHTML=`Ainda pode gastar até dez/2027: <span class="${acc>=0?"r":"d"}">${brl(acc)}</span>`;
  $("kr").textContent=brl(rec);$("kd").textContent=brl(des);$("ks").textContent=brl(sal);$("ks").className="big "+(sal>=0?"r":"d");
  $("ke").textContent=eco.toFixed(1)+"%";$("ke").className="big "+(eco>=0?"r":"d");
- $("li").innerHTML=I.map(i=>`<tr class="${i.grupo==="receita"||!bol(i)?"":(pg(i,m)?"rp":"rn")}"><td>${i.dia?"Dia "+i.dia:""}</td><td>${esc(i.desc)}</td><td class="m">${nome[i.grupo]}${i.grupo==="cartao"?" (só pagamento)":""} · ${i.pessoa}${i.cat?" · "+i.cat:""}${pw(i)===.5?" ½":""}${i.parcelas>1?` · ${mi(m)-mi(i.inicio)+1}/${i.parcelas}`:""}</td><td class="${i.grupo==="receita"?"r":""}">${brl(val(i,m)*pw(i))}</td><td>${i.grupo==="receita"||i.grupo==="avulsa"?"":`${bol(i)?`<button class="x" data-a="pg" data-id="${i.id}">${pg(i,m)?"✅":"⬜"}</button>`:""}<button class="x" data-a="bol" data-id="${i.id}" title="Boleto a pagar" style="opacity:${bol(i)?1:.35}">🧾</button>`}<button class="x" data-a="aj" data-id="${i.id}">✎</button><button class="x" data-a="del" data-c="itens" data-id="${i.id}">✕</button></td></tr>`).join("")||'<tr><td class="m">Nada neste mês.</td></tr>';
+ $("li").innerHTML=I.map(i=>`<tr class="${i.grupo==="receita"||!bol(i)?"":(pg(i,m)?"rp":"rn")}"><td>${i.dia?"Dia "+i.dia:""}</td><td>${esc(i.desc)}</td><td class="m">${nome[i.grupo]}${i.grupo==="cartao"?" (só pagamento)":""} · ${i.pessoa}${i.cat?" · "+i.cat:""}${pw(i)===.5?" ½":""}${i.parcelas>1?` · ${mi(m)-mi(i.inicio)+1}/${i.parcelas}`:""}</td><td class="${i.grupo==="receita"?"r":""}">${brl(val(i,m)*pw(i))}</td><td>${bol(i)?`<button class="x" data-a="pg" data-id="${i.id}">${pg(i,m)?"✅":"⬜"}</button>`:""}<button class="x" data-a="aj" data-id="${i.id}">✎</button><button class="x" data-a="del" data-c="itens" data-id="${i.id}">✕</button></td></tr>`).join("")||'<tr><td class="m">Nada neste mês.</td></tr>';
  $("orc").innerHTML=CATS.slice().sort((x,y)=>(por[y]||0)-(por[x]||0)).map(c=>{const g=por[c]||0,pc=des?g/des*100:0,cor="var(--ac)";
   return`<div style="margin-bottom:9px"><div class="row" style="justify-content:space-between"><span>${c}</span><span class="m" style="text-align:right">${brl(g)}</span></div><div class="bar"><i style="width:${pc}%;background:${cor}"></i></div></div>`}).join("");
 }
-$("mes").onchange=$("pes").onchange=render;
-$("ig").onchange=()=>{const a=["avulsa","receita"].includes($("ig").value);$("lbol").style.display=a?"none":"";if(a)$("ibol").checked=false};
-$("lm").onclick=async()=>{const m=$("mes").value,lbl=m.slice(5)+"/"+m.slice(0,4);
+$("mes").onchange=$("pes").onchange=render;$("lm").onclick=async()=>{const m=$("mes").value,lbl=m.slice(5)+"/"+m.slice(0,4);
  if(!confirm("Apagar TUDO de "+lbl+"? O que continua nos meses seguintes passa a começar no mês seguinte. Não dá para desfazer."))return;
  if(prompt("Para confirmar, digite "+lbl)!==lbl)return;
  const nx=mm=>{let[y,k]=mm.split("-").map(Number);k++;if(k>12){k=1;y++}return y+"-"+String(k).padStart(2,"0")};
@@ -150,5 +149,5 @@ document.body.onclick=async e=>{const tr=e.target.closest("tr[data-m]");if(tr){$
  if(a==="pg"){const mm=b.dataset.m||$("mes").value,it=itens.find(x=>x.id===id);await updateDoc(doc(db,"itens",id),{["pago."+mm]:!pg(it,mm)})}
  if(a==="aj"){const m=$("mes").value,it=itens.find(x=>x.id===id),v=prompt("Valor para "+m+":",val(it,m));if(v!==null&&!isNaN(parseFloat(v)))await updateDoc(doc(db,"itens",id),{["aj."+m]:parseFloat(v.replace(",","."))})}};
 $("ai").onclick=async()=>{const v=parseFloat($("iv").value);if(!v||!$("id").value||!$("ii").value)return alert("Preencha descrição, valor e mês inicial.");
- await addDoc(collection(db,"itens"),{grupo:$("ig").value,desc:$("id").value,valor:v,dia:+$("idia").value||0,inicio:$("ii").value,parcelas:$("ig").value==="avulsa"?1:+$("ip").value||0,cat:$("icat").value,pessoa:$("ipe").value,boleto:$("ibol").checked});$("id").value=$("iv").value=""};
+ await addDoc(collection(db,"itens"),{grupo:$("ig").value,desc:$("id").value,valor:v,dia:+$("idia").value||0,inicio:$("ii").value,parcelas:$("ig").value==="avulsa"?1:+$("ip").value||0,cat:$("icat").value,pessoa:$("ipe").value});$("id").value=$("iv").value=""};
 </script></main></body></html>
