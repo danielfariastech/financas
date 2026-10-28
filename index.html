@@ -21,7 +21,7 @@ button{cursor:pointer}.p{background:var(--ac);color:#fff;border-color:var(--ac)}
 
 <div id="app" class="hide">
 <div class="row" style="margin-bottom:12px"><h1 style="flex:2 1 200px">💰 Finanças do Casal</h1>
-<input type="month" id="mes"><select id="pes"><option>Todos</option><option>Daniel</option><option>Regiane</option><option>Diversos</option></select><button id="out">Sair</button></div>
+<input type="month" id="mes"><select id="pes"><option>Todos</option><option>Daniel</option><option>Regiane</option><option>Casal</option></select><button id="out">Sair</button></div>
 
 <div class="g g4"><div class="card"><div class="m">Receitas</div><div class="big r" id="kr"></div></div>
 <div class="card"><div class="m">Despesas</div><div class="big d" id="kd"></div></div>
@@ -33,14 +33,15 @@ button{cursor:pointer}.p{background:var(--ac);color:#fff;border-color:var(--ac)}
 <select id="ig"><option value="fixa">Despesa fixa</option><option value="parcela">Parcelada</option><option value="avulsa">Gasto avulso (1 vez)</option><option value="cartao">Fatura de cartão</option><option value="receita">Receita</option></select>
 <input id="id" placeholder="Descrição" style="flex:2 1 160px"><input id="iv" type="number" step="0.01" placeholder="Valor">
 <input id="idia" type="number" min="1" max="31" placeholder="Dia"><input id="ii" type="month"><input id="ip" type="number" min="0" placeholder="Parcelas (0 = sem fim)">
-<select id="ipe"><option>Diversos</option><option>Daniel</option><option>Regiane</option></select><label class="m" id="lcomp" style="flex:1 1 150px;display:none;gap:4px">Data da compra<input id="icomp" type="date"></label><select id="icat"></select><button class="p" id="ai">Adicionar</button></div></div>
+<select id="ipe"><option>Casal</option><option>Daniel</option><option>Regiane</option></select><label class="m" id="lcomp" style="flex:1 1 150px;display:none;gap:4px">Data da compra<input id="icomp" placeholder="dd/mm/aa" maxlength="8" inputmode="numeric"></label><select id="icat"></select><button class="p" id="ai">Adicionar</button></div></div>
 </div>
 
+<div class="card" id="ccafe"><h2>Café da manhã</h2><div class="row"><input id="cv" type="number" step="0.01" placeholder="Valor do café (R$)"><button class="p" id="cs">Somar</button><button id="cu">Desfazer último</button></div><div class="m" id="cinfo" style="margin-top:6px"></div></div>
 <div class="g" style="grid-template-columns:1fr">
-<div class="card"><h2>Lançamentos do mês <span class="m">(✎ ajusta o valor só neste mês · ⬜/✅ marca despesa fixa como paga)</span></h2><div class="m" style="margin-bottom:8px">🟩 Pago &nbsp; 🟥 Não pago &nbsp;·&nbsp; <span id="pgres"></span></div><div class="sc"><table><tbody id="li"></tbody></table></div></div>
+<div class="card"><h2>Lançamentos do mês <span class="m">(✎ ajusta o valor só neste mês · as despesas fixas ficam no card Despesas fixas)</span></h2><div class="sc"><table><tbody id="li"></tbody></table></div></div>
 <div class="card"><h2>Gastos por categoria</h2><div id="orc"></div>
 </div></div>
-<div class="card"><h2 id="anot">Despesas fixas</h2><div class="m" style="margin-bottom:8px">Só as despesas fixas (as faturas de cartão não entram). 🟩 Pago · 🟥 Não pago. Toque em um valor para marcar.</div>
+<div class="card"><h2 id="anot">Despesas fixas</h2><div class="m" style="margin-bottom:8px">Só as despesas fixas (as faturas de cartão não entram). 🟩 Pago · 🟥 Não pago. Toque em um valor para marcar. <span id="pgres"></span></div>
 <div class="sc"><table><thead id="ah"></thead><tbody id="ab"></tbody></table></div></div>
 <div class="card"><h2>Planejamento até dez/2027</h2><div class="big" id="plt"></div>
 <div class="m" style="margin-bottom:8px">Sobra = receitas − despesas já cadastradas em cada mês. Toque em um mês para abri-lo. Fixas e receitas "sem fim" se repetem até dez/2027. Faturas de cartão não somam nas despesas, porque as compras já entram.</div>
@@ -64,9 +65,9 @@ import{getFirestore,collection,addDoc,deleteDoc,updateDoc,setDoc,doc,onSnapshot}
 const firebaseConfig={apiKey:"AIzaSyA9CAw5fkwM5-wU5jKyXALJnM6oRig3ZVo",authDomain:"financas-pessoais-f6052.firebaseapp.com",projectId:"financas-pessoais-f6052",storageBucket:"financas-pessoais-f6052.firebasestorage.app",messagingSenderId:"235846742963",appId:"1:235846742963:web:f9877b71b6e66ca2d911c6"};
 
 const $=i=>document.getElementById(i),brl=n=>n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
-const CATS=["Lanches","Mercantil","Açaí","Almoço","Merenda","Shalom","Uber","Diversos"];
+const CATS=["Lanches","Mercantil","Açaí","Almoço","Café da Manhã","Shalom","Uber","Diversos"];
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
-let terc=[],cart={},itens=[],gastos=[],metas={economia:20,orc:{}},subs=[];
+let cafes={},terc=[],cart={},itens=[],gastos=[],metas={economia:20,orc:{}},subs=[];
 const hoje=new Date().toISOString().slice(0,10);
 $("mes").value=$("ii").value=$("tini").value=hoje.slice(0,7);
 $("icat").innerHTML='<option value="">Categoria (opcional)</option>'+CATS.map(c=>`<option>${c}</option>`).join("");
@@ -88,15 +89,21 @@ onAuthStateChanged(auth,u=>{
  const er=e=>{$("err").textContent="Sem permissão ou erro: "+e.message;$("login").classList.remove("hide");$("app").classList.add("hide")};
  subs.push(onSnapshot(collection(db,"itens"),s=>{itens=s.docs.map(d=>({id:d.id,...d.data()}));render()},er));
  subs.push(onSnapshot(collection(db,"cartoes"),s=>{cart={};s.docs.forEach(d=>cart[d.id]=d.data());render()},er));
+ subs.push(onSnapshot(collection(db,"cafes"),s=>{cafes={};s.docs.forEach(d=>cafes[d.id]=d.data().v||[]);render()},er));
  subs.push(onSnapshot(collection(db,"terceiros"),s=>{terc=s.docs.map(d=>({id:d.id,...d.data()}));render()},er));
 });
 
 function render(){
- const m=$("mes").value,p=$("pes").value,pw=x=>{const dv=x.pessoa==="Diversos"||x.pessoa==="Casa";return p==="Todos"?1:p==="Diversos"?(dv?1:0):dv?.5:(x.pessoa===p?1:0)},f=x=>pw(x)>0;
+ const m=$("mes").value,p=$("pes").value,pw=x=>{const dv=["Diversos","Casa","Casal"].includes(x.pessoa);return p==="Todos"?1:p==="Casal"?(dv?1:0):dv?.5:(x.pessoa===p?1:0)},f=x=>pw(x)>0;
+ const CF=cafes[m]||[],cfOn=p==="Todos"||p==="Daniel",cfT=cfOn?CF.reduce((a,b)=>a+b,0):0,
+ cafeRow=cfOn&&CF.length?`<tr><td></td><td>Café da manhã</td><td class="m">Avulso · Daniel · ${CF.length} cafés</td><td>${brl(cfT)}</td><td></td></tr>`:"";
+ $("cinfo").textContent=CF.length?CF.length+" cafés em "+m.slice(5)+"/"+m.slice(0,4)+" · "+brl(CF.reduce((a,b)=>a+b,0)):"Nenhum café lançado em "+m.slice(5)+"/"+m.slice(0,4)+".";
+ $("ccafe").style.display=cfOn&&!document.body.dataset.r?"":"none";
  const I=itens.filter(i=>ativo(i,m)&&f(i)).sort((a,b)=>((RK[a.grupo]??9)-(RK[b.grupo]??9))||(a.dia||0)-(b.dia||0)); let rec=0,des=0;I.forEach(i=>{const v=val(i,m)*pw(i);if(i.grupo==="receita")rec+=v;else if(i.grupo!=="cartao")des+=v});
- const por={};I.forEach(i=>{if(i.grupo!=="receita"&&i.grupo!=="cartao"&&i.cat)por[i.cat]=(por[i.cat]||0)+val(i,m)*pw(i)});
+ const por={};I.forEach(i=>{if(i.grupo!=="receita"&&i.grupo!=="cartao"&&i.cat)por[i.cat]=(por[i.cat]||0)+val(i,m)});
+ por["Café da Manhã"]=(por["Café da Manhã"]||0)+cfT;des+=cfT;
  const sal=rec-des,eco=rec?sal/rec*100:0;
- const tot=mm=>{let r=0,d=0;itens.forEach(i=>{if(ativo(i,mm)&&pw(i)>0){const v=val(i,mm)*pw(i);if(i.grupo==="receita")r+=v;else if(i.grupo!=="cartao")d+=v}});return[r,d]};
+ const tot=mm=>{let r=0,d=0;itens.forEach(i=>{if(ativo(i,mm)&&pw(i)>0){const v=val(i,mm)*pw(i);if(i.grupo==="receita")r+=v;else if(i.grupo!=="cartao")d+=v}});return[r,d+(cfOn?(cafes[mm]||[]).reduce((a,b)=>a+b,0):0)]};
  {const c=cart[m],ae=document.activeElement&&document.activeElement.id;
  if(!/^c[0-2]$/.test(ae||""))[0,1,2].forEach(k=>$("c"+k).value=c&&c.v&&c.v[k]?c.v[k]:"");
  $("cup").textContent=c?"Última atualização: "+c.at.split("-").reverse().join("/"):"Ainda sem valores neste mês.";
@@ -119,7 +126,7 @@ function render(){
  $("ah").innerHTML="<tr><th>Dia</th><th>Descrição</th>"+MN.map(n=>"<th>"+n+"</th>").join("")+"</tr>";
  const AD=itens.filter(i=>i.grupo!=="receita"&&bol(i)&&pw(i)>0&&MN.some((_,k)=>ativo(i,mk(k)))).sort((a,b)=>(a.dia||0)-(b.dia||0)||a.desc.localeCompare(b.desc));
  const tt=Array(12).fill(0),tp=Array(12).fill(0);
- $("ab").innerHTML=AD.map(i=>"<tr><td>"+(i.dia||"")+"</td><td>"+esc(i.desc)+"</td>"+MN.map((_,k)=>{const mm=mk(k);if(!ativo(i,mm))return'<td class="m">-</td>';const v=val(i,mm)*pw(i);tt[k]+=v;if(pg(i,mm))tp[k]+=v;return`<td><button class="cel ${pg(i,mm)?"cp":"cn"}" data-a="pg" data-id="${i.id}" data-m="${mm}">${brl(v)}</button></td>`}).join("")+"</tr>").join("")+"<tr><th></th><th>Total</th>"+tt.map(v=>"<th>"+brl(v)+"</th>").join("")+"</tr><tr><th></th><th>Falta pagar</th>"+tt.map((v,k)=>'<th class="d">'+brl(v-tp[k])+"</th>").join("")+"</tr>";
+ $("ab").innerHTML=AD.map(i=>"<tr><td>"+(i.dia||"")+"</td><td>"+esc(i.desc)+' <button class="x" data-a="fx" data-id="'+i.id+'">✎</button><button class="x" data-a="del" data-c="itens" data-id="'+i.id+'">✕</button></td>'+MN.map((_,k)=>{const mm=mk(k);if(!ativo(i,mm))return'<td class="m">-</td>';const v=val(i,mm)*pw(i);tt[k]+=v;if(pg(i,mm))tp[k]+=v;return`<td><button class="cel ${pg(i,mm)?"cp":"cn"}" data-a="pg" data-id="${i.id}" data-m="${mm}">${brl(v)}</button></td>`}).join("")+"</tr>").join("")+"<tr><th></th><th>Total</th>"+tt.map(v=>"<th>"+brl(v)+"</th>").join("")+"</tr><tr><th></th><th>Falta pagar</th>"+tt.map((v,k)=>'<th class="d">'+brl(v-tp[k])+"</th>").join("")+"</tr>";
  let y=2026,mo=11,acc=0,TR=0,TD=0,rows="";
  while(y<2028){const mm=y+"-"+String(mo).padStart(2,"0"),[r,d]=tot(mm);acc+=r-d;TR+=r;TD+=d;
   rows+=`<tr data-m="${mm}" style="cursor:pointer"><td>${String(mo).padStart(2,"0")}/${y}</td><td class="r">${brl(r)}</td><td class="d">${brl(d)}</td><td class="${r-d>=0?"r":"d"}">${brl(r-d)}</td></tr>`;if(++mo>12){mo=1;y++}}
@@ -127,11 +134,16 @@ function render(){
  $("plt").innerHTML=`Ainda pode gastar até dez/2027: <span class="${acc>=0?"r":"d"}">${brl(acc)}</span>`;
  $("kr").textContent=brl(rec);$("kd").textContent=brl(des);$("ks").textContent=brl(sal);$("ks").className="big "+(sal>=0?"r":"d");
  $("ke").textContent=eco.toFixed(1)+"%";$("ke").className="big "+(eco>=0?"r":"d");
- $("li").innerHTML=I.map(i=>`<tr class="${i.grupo==="receita"||!bol(i)?"":(pg(i,m)?"rp":"rn")}"><td>${i.dia?"Dia "+i.dia:""}</td><td>${esc(i.desc)}</td><td class="m">${nome[i.grupo]}${i.grupo==="cartao"?" (só pagamento)":""} · ${i.pessoa}${i.cat?" · "+i.cat:""}${pw(i)===.5?" ½":""}${i.parcelas>1?` · ${mi(m)-mi(i.inicio)+1}/${i.parcelas}`:""}${i.compra?" · compra "+i.compra.split("-").reverse().join("/"):""}</td><td class="${i.grupo==="receita"?"r":""}">${brl(val(i,m)*pw(i))}</td><td>${bol(i)?`<button class="x" data-a="pg" data-id="${i.id}">${pg(i,m)?"✅":"⬜"}</button>`:""}<button class="x" data-a="aj" data-id="${i.id}">✎</button><button class="x" data-a="del" data-c="itens" data-id="${i.id}">✕</button></td></tr>`).join("")||'<tr><td class="m">Nada neste mês.</td></tr>';
+ $("li").innerHTML=I.filter(i=>i.grupo!=="fixa").map(i=>`<tr class="${i.grupo==="receita"||!bol(i)?"":(pg(i,m)?"rp":"rn")}"><td>${i.dia?"Dia "+i.dia:""}</td><td>${esc(i.desc)}</td><td class="m">${nome[i.grupo]}${i.grupo==="cartao"?" (só pagamento)":""} · ${["Diversos","Casa"].includes(i.pessoa)?"Casal":i.pessoa}${i.cat?" · "+i.cat:""}${pw(i)===.5?" ½":""}${i.parcelas>1?` · ${mi(m)-mi(i.inicio)+1}/${i.parcelas}`:""}${i.compra?" · compra "+i.compra.slice(8,10)+"/"+i.compra.slice(5,7)+"/"+i.compra.slice(2,4):""}</td><td class="${i.grupo==="receita"?"r":""}">${brl(val(i,m)*pw(i))}</td><td>${bol(i)?`<button class="x" data-a="pg" data-id="${i.id}">${pg(i,m)?"✅":"⬜"}</button>`:""}<button class="x" data-a="aj" data-id="${i.id}">✎</button><button class="x" data-a="del" data-c="itens" data-id="${i.id}">✕</button></td></tr>`).join("")+cafeRow||'<tr><td class="m">Nada neste mês.</td></tr>';
  $("orc").innerHTML=CATS.slice().sort((x,y)=>(por[y]||0)-(por[x]||0)).map(c=>{const g=por[c]||0,pc=des?g/des*100:0,cor="var(--ac)";
   return`<div style="margin-bottom:9px"><div class="row" style="justify-content:space-between"><span>${c}</span><span class="m" style="text-align:right">${brl(g)}</span></div><div class="bar"><i style="width:${pc}%;background:${cor}"></i></div></div>`}).join("");
 }
 $("mes").onchange=$("pes").onchange=render;
+const cmp=t=>{const x=t.match(/^(\d\d)\/(\d\d)\/(\d\d)$/);return x?"20"+x[3]+"-"+x[2]+"-"+x[1]:""};
+$("icomp").oninput=()=>{const d=$("icomp").value.replace(/\D/g,"").slice(0,6);$("icomp").value=d.length>4?d.slice(0,2)+"/"+d.slice(2,4)+"/"+d.slice(4):d.length>2?d.slice(0,2)+"/"+d.slice(2):d};
+$("cs").onclick=async()=>{const v=parseFloat($("cv").value);if(!v||v<=0)return;const m=$("mes").value;await setDoc(doc(db,"cafes",m),{v:[...(cafes[m]||[]),v]});$("cv").value="";$("cv").focus()};
+$("cu").onclick=async()=>{const m=$("mes").value,a=cafes[m]||[];if(!a.length)return;await setDoc(doc(db,"cafes",m),{v:a.slice(0,-1)})};
+$("cv").onkeydown=e=>{if(e.key==="Enter")$("cs").click()};
 $("ig").onchange=()=>{$("lcomp").style.display=["parcela","avulsa"].includes($("ig").value)?"grid":"none"};$("lm").onclick=async()=>{const m=$("mes").value,lbl=m.slice(5)+"/"+m.slice(0,4);
  if(!confirm("Apagar TUDO de "+lbl+"? O que continua nos meses seguintes passa a começar no mês seguinte. Não dá para desfazer."))return;
  if(prompt("Para confirmar, digite "+lbl)!==lbl)return;
@@ -139,6 +151,7 @@ $("ig").onchange=()=>{$("lcomp").style.display=["parcela","avulsa"].includes($("
  for(const[col,arr]of[["itens",itens],["terceiros",terc]])for(const it of arr){if(!ativo(it,m))continue;const d=mi(m)-mi(it.inicio),cont=!it.parcelas||d+1<it.parcelas;
   if(cont)await updateDoc(doc(db,col,it.id),{inicio:nx(m),parcelas:it.parcelas?it.parcelas-(d+1):0});else await deleteDoc(doc(db,col,it.id))}
  if(cart[m])await deleteDoc(doc(db,"cartoes",m));
+ if(cafes[m])await deleteDoc(doc(db,"cafes",m));
  alert("Mês "+lbl+" apagado.")};
 $("tadd").onclick=async()=>{const v=parseFloat($("tval").value);if(!v||!$("tdesc").value||!$("tini").value)return alert("Preencha compra, valor e mês inicial.");await addDoc(collection(db,"terceiros"),{pessoa:$("tpe").value,desc:$("tdesc").value,valor:v,inicio:$("tini").value,parcelas:+$("tpar").value||0});$("tdesc").value=$("tval").value=""};
 $("sc").onclick=()=>setDoc(doc(db,"cartoes",$("mes").value),{v:[0,1,2].map(k=>parseFloat($("c"+k).value)||0),at:new Date().toISOString().slice(0,10)});
@@ -148,7 +161,8 @@ document.body.onclick=async e=>{const tr=e.target.closest("tr[data-m]");if(tr){$
  if(a==="taj"){const mm=$("mes").value,t=terc.find(x=>x.id===id),v=prompt("Valor para "+mm+":",val(t,mm));if(v!==null&&!isNaN(parseFloat(v.replace(",","."))))await updateDoc(doc(db,"terceiros",id),{["aj."+mm]:parseFloat(v.replace(",","."))})}
  if(a==="bol"){const it=itens.find(x=>x.id===id);await updateDoc(doc(db,"itens",id),{boleto:!it.boleto})}
  if(a==="pg"){const mm=b.dataset.m||$("mes").value,it=itens.find(x=>x.id===id);await updateDoc(doc(db,"itens",id),{["pago."+mm]:!pg(it,mm)})}
+ if(a==="fx"){const it=itens.find(x=>x.id===id),cur=$("mes").value,ml=prompt("Ajustar "+it.desc+" em qual mês? (mm/aa)",cur.slice(5)+"/"+cur.slice(2,4));if(!ml)return;const mt=ml.match(/^(\d{1,2})\/(\d{2})$/);if(!mt)return alert("Use o formato mm/aa, ex.: 11/26");const mm="20"+mt[2]+"-"+mt[1].padStart(2,"0"),v=prompt("Valor de "+ml+":",val(it,mm));if(v!==null&&!isNaN(parseFloat(v.replace(",","."))))await updateDoc(doc(db,"itens",id),{["aj."+mm]:parseFloat(v.replace(",","."))})}
  if(a==="aj"){const m=$("mes").value,it=itens.find(x=>x.id===id),v=prompt("Valor para "+m+":",val(it,m));if(v!==null&&!isNaN(parseFloat(v)))await updateDoc(doc(db,"itens",id),{["aj."+m]:parseFloat(v.replace(",","."))})}};
 $("ai").onclick=async()=>{const v=parseFloat($("iv").value);if(!v||!$("id").value||!$("ii").value)return alert("Preencha descrição, valor e mês inicial.");
- await addDoc(collection(db,"itens"),{grupo:$("ig").value,desc:$("id").value,valor:v,dia:+$("idia").value||0,inicio:$("ii").value,parcelas:$("ig").value==="avulsa"?1:+$("ip").value||0,cat:$("icat").value,pessoa:$("ipe").value,compra:["parcela","avulsa"].includes($("ig").value)?$("icomp").value:""});$("icomp").value="";$("id").value=$("iv").value=""};
+ await addDoc(collection(db,"itens"),{grupo:$("ig").value,desc:$("id").value,valor:v,dia:+$("idia").value||0,inicio:$("ii").value,parcelas:$("ig").value==="avulsa"?1:+$("ip").value||0,cat:$("icat").value,pessoa:$("ipe").value,compra:["parcela","avulsa"].includes($("ig").value)?cmp($("icomp").value):""});$("icomp").value="";$("id").value=$("iv").value=""};
 </script></main></body></html>
