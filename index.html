@@ -14,7 +14,7 @@ input,select,button{font:inherit;color:var(--tx);background:var(--bg);border:1px
 button{cursor:pointer}.p{background:var(--ac);color:#fff;border-color:var(--ac)}.big{font-size:21px;font-weight:700}.m{color:var(--m);font-size:13px}
 .bar{height:8px;background:var(--bd);border-radius:6px;overflow:hidden}.bar i{display:block;height:100%}
 .sc{overflow-x:auto}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:6px;border-bottom:1px solid var(--bd);white-space:nowrap}
-.r{color:var(--ok)}.d{color:var(--bad)}.rp td{background:rgba(22,163,74,.14)}.rn td{background:rgba(220,38,38,.12)}.cel{width:100%;border:0;border-radius:6px;padding:5px 8px;cursor:pointer;color:var(--tx)}.cp{background:rgba(22,163,74,.3)}.cn{background:rgba(220,38,38,.28)}.x{border:0;background:none;color:var(--m);padding:2px 6px;flex:0}
+.r{color:var(--ok)}.d{color:var(--bad)}.rp td{background:rgba(22,163,74,.14)}.rn td{background:rgba(220,38,38,.12)}.cel{width:100%;border:0;border-radius:6px;padding:5px 8px;cursor:pointer;color:var(--tx)}.cp{background:rgba(22,163,74,.3)}.cn{background:rgba(220,38,38,.28)}body[data-r="1"] .x{display:none}body[data-r="1"] .cel{pointer-events:none}.x{border:0;background:none;color:var(--m);padding:2px 6px;flex:0}
 #login{text-align:center;padding:60px 0}.hide{display:none}
 </style></head><body><main>
 <div id="login"><h1>💰 Finanças do Casal</h1><p class="m">Entre com a conta Google autorizada.</p><button class="p" id="in">Entrar com Google</button><p class="d" id="err"></p></div>
@@ -38,7 +38,7 @@ button{cursor:pointer}.p{background:var(--ac);color:#fff;border-color:var(--ac)}
 
 <div class="g" style="grid-template-columns:1fr">
 <div class="card"><h2>Lançamentos do mês <span class="m">(✎ ajusta o valor só neste mês · as despesas fixas ficam no card Despesas fixas)</span></h2><div class="sc"><table><tbody id="li"></tbody></table></div></div>
-<div class="card"><h2>Gastos por categoria</h2><div class="row" style="margin-bottom:6px"><span class="m" style="flex:0 0 auto">Somar como:</span><select id="sp" style="flex:0 1 140px"><option>Daniel</option><option>Regiane</option><option>Casal</option></select></div><div class="m" style="margin-bottom:10px">Digite um valor e toque em Somar (ou Enter) para ir acumulando. ↶ desfaz o último.</div><div id="orc"></div>
+<div class="card"><h2>Gastos por categoria</h2><div class="row" style="margin-bottom:12px"><span class="m" style="flex:0 0 auto">Somar como:</span><select id="sp" style="flex:0 1 110px"><option>Daniel</option><option>Regiane</option><option>Casal</option></select><select id="scat" style="flex:1 1 130px"></select><input id="sval" type="number" step="0.01" placeholder="Valor (R$)" style="flex:1 1 110px"><button class="p" id="sadd">Somar</button><button id="sund" title="Desfazer o último valor da categoria escolhida">↶ Desfazer</button></div><div id="orc"></div>
 </div></div>
 <div class="card"><h2 id="anot">Despesas fixas</h2><div class="m" style="margin-bottom:8px">Só as despesas fixas (as faturas de cartão não entram). 🟩 Pago · 🟥 Não pago. Toque em um valor para marcar. <span id="pgres"></span></div>
 <div class="sc"><table><thead id="ah"></thead><tbody id="ab"></tbody></table></div></div>
@@ -69,7 +69,7 @@ const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
 let somas={},cafes={},terc=[],cart={},itens=[],gastos=[],metas={economia:20,orc:{}},subs=[];
 const hoje=new Date().toISOString().slice(0,10);
 $("mes").value=$("ii").value=$("tini").value=hoje.slice(0,7);
-$("icat").innerHTML='<option value="">Categoria (opcional)</option>'+CATS.map(c=>`<option>${c}</option>`).join("");
+$("scat").innerHTML=CATS.map(c=>`<option>${c}</option>`).join("");$("icat").innerHTML='<option value="">Categoria (opcional)</option>'+CATS.map(c=>`<option>${c}</option>`).join("");
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const mi=s=>{const[a,b]=s.split("-");return a*12+ +b};
 const ativo=(it,m)=>{const d=mi(m)-mi(it.inicio);return d>=0&&(!it.parcelas||d<it.parcelas)};
@@ -77,7 +77,7 @@ const val=(it,m)=>it.aj&&it.aj[m]!=null?it.aj[m]:it.valor;
 const rawS=(mm,c)=>c==="Café da Manhã"?(cafes[mm]||[]):(somas[mm+"|"+c]||[]);
 const ents=(mm,c)=>rawS(mm,c).map(x=>typeof x==="number"?{v:x,p:"Daniel"}:x);
 const setS=(mm,c,a)=>c==="Café da Manhã"?setDoc(doc(db,"cafes",mm),{v:a}):setDoc(doc(db,"somas",mm+"|"+c),{v:a});
-const addS=async c=>{const i=document.querySelector('[data-cv="'+c+'"]'),v=parseFloat(i.value),m=$("mes").value;if(!v||v<=0)return;await setS(m,c,[...rawS(m,c),{v,p:$("sp").value}]);i.value=""};
+const addS=async()=>{const v=parseFloat($("sval").value),m=$("mes").value,c=$("scat").value;if(!v||v<=0)return;await setS(m,c,[...rawS(m,c),{v,p:$("sp").value}]);$("sval").value="";$("sval").focus()};
 const pg=(i,m)=>!!(i.pago&&i.pago[m]),bol=i=>i.grupo==="fixa";
 const RK={receita:0,fixa:1,cartao:2,parcela:3,avulsa:4};
 const nome={fixa:"Fixa",parcela:"Parcela",cartao:"Cartão",avulsa:"Avulso",receita:"Receita"};
@@ -88,7 +88,7 @@ onAuthStateChanged(auth,u=>{
  subs.forEach(f=>f());subs=[];
  $("login").classList.toggle("hide",!!u);$("app").classList.toggle("hide",!u);
  if(!u)return;
- const isR=/regiane/i.test(u.email||"");document.body.dataset.r=isR?"1":"";$("pes").value=isR?"Regiane":"Daniel";$("sp").value=isR?"Regiane":"Daniel";$("pes").disabled=isR;
+ const isR=/regiane/i.test(u.email||"");document.body.dataset.r=isR?"1":"";$("pes").value=isR?"Regiane":"Daniel";$("sp").value=isR?"Regiane":"Daniel";$("pes").disabled=isR;if(isR){["ai","orc"].forEach(id=>$(id).closest(".card").style.display="none");$("lm").parentElement.style.display="none";document.querySelector(".g4").style.display="none"}
  const er=e=>{$("err").textContent="Sem permissão ou erro: "+e.message;$("login").classList.remove("hide");$("app").classList.add("hide")};
  subs.push(onSnapshot(collection(db,"itens"),s=>{itens=s.docs.map(d=>({id:d.id,...d.data()}));itens.filter(i=>i.cat==="Merenda").forEach(i=>updateDoc(doc(db,"itens",i.id),{cat:"Café da Manhã"}));render()},er));
  subs.push(onSnapshot(collection(db,"cartoes"),s=>{cart={};s.docs.forEach(d=>cart[d.id]=d.data());render()},er));
@@ -135,15 +135,14 @@ function render(){
  $("kr").textContent=brl(rec);$("kd").textContent=brl(des);$("ks").textContent=brl(sal);$("ks").className="big "+(sal>=0?"r":"d");
  $("ke").textContent=eco.toFixed(1)+"%";$("ke").className="big "+(eco>=0?"r":"d");
  $("li").innerHTML=I.filter(i=>i.grupo!=="fixa"&&i.grupo!=="cartao").map(i=>`<tr class="${i.grupo==="receita"||!bol(i)?"":(pg(i,m)?"rp":"rn")}"><td>${i.compra?fd(i.compra):(i.dia?"Dia "+i.dia:"")}</td><td>${esc(i.desc)}</td><td class="m">${nome[i.grupo]}${i.grupo==="cartao"?" (só pagamento)":""} · ${["Diversos","Casa"].includes(i.pessoa)?"Casal":i.pessoa}${i.cat?" · "+i.cat:""}${pw(i)===.5?" ½":""}${i.parcelas>1?` · ${mi(m)-mi(i.inicio)+1}/${i.parcelas}`:""}</td><td class="${i.grupo==="receita"?"r":""}">${brl(val(i,m)*pw(i))}</td><td>${bol(i)?`<button class="x" data-a="pg" data-id="${i.id}">${pg(i,m)?"✅":"⬜"}</button>`:""}<button class="x" data-a="aj" data-id="${i.id}">✎</button><button class="x" data-a="del" data-c="itens" data-id="${i.id}">✕</button></td></tr>`).join("")||'<tr><td class="m">Nada neste mês.</td></tr>';
- {const sv={};document.querySelectorAll("[data-cv]").forEach(e=>{sv[e.dataset.cv]=e.value});const fa=document.activeElement&&document.activeElement.dataset?document.activeElement.dataset.cv:null;
  $("orc").innerHTML=CATS.slice().sort((x,y)=>(por[y]||0)-(por[x]||0)).map(c=>{const g=por[c]||0,pc=des?g/des*100:0;
-  return`<div style="margin-bottom:12px"><div class="row" style="justify-content:space-between"><span>${c}</span><span class="m" style="text-align:right">${brl(g)}${cnt[c]?" · "+cnt[c]+(cnt[c]>1?" somas":" soma"):""}</span></div><div class="bar"><i style="width:${pc}%;background:var(--ac)"></i></div><div class="row" style="margin-top:5px"><input data-cv="${c}" type="number" step="0.01" placeholder="Somar valor" style="flex:1 1 90px"><button data-a="sa" data-cat="${c}">Somar</button><button class="x" data-a="su" data-cat="${c}" title="Desfazer último">↶</button></div></div>`}).join("");
- document.querySelectorAll("[data-cv]").forEach(e=>{if(sv[e.dataset.cv])e.value=sv[e.dataset.cv]});if(fa){const e=document.querySelector('[data-cv="'+fa+'"]');if(e)e.focus()}}
+  return`<div style="margin-bottom:10px"><div class="row" style="justify-content:space-between"><span>${c}</span><span class="m" style="text-align:right">${brl(g)}${cnt[c]?" · "+cnt[c]+(cnt[c]>1?" somas":" soma"):""}</span></div><div class="bar"><i style="width:${pc}%;background:var(--ac)"></i></div></div>`}).join("");
 }
 $("mes").onchange=$("pes").onchange=render;
 const cmp=t=>{const x=t.match(/^(\d\d)\/(\d\d)\/(\d\d)$/);return x?"20"+x[3]+"-"+x[2]+"-"+x[1]:""};
 $("icomp").oninput=()=>{const d=$("icomp").value.replace(/\D/g,"").slice(0,6);$("icomp").value=d.length>4?d.slice(0,2)+"/"+d.slice(2,4)+"/"+d.slice(4):d.length>2?d.slice(0,2)+"/"+d.slice(2):d};
-$("orc").onkeydown=e=>{if(e.key==="Enter"&&e.target.dataset.cv)addS(e.target.dataset.cv)};
+$("sadd").onclick=addS;$("sval").onkeydown=e=>{if(e.key==="Enter")addS()};
+$("sund").onclick=async()=>{const m=$("mes").value,c=$("scat").value,a=rawS(m,c);if(a.length)await setS(m,c,a.slice(0,-1))};
 $("ig").onchange=()=>{$("lcomp").style.display=["parcela","avulsa"].includes($("ig").value)?"grid":"none"};$("lm").onclick=async()=>{const m=$("mes").value,lbl=m.slice(5)+"/"+m.slice(0,4);
  if(!confirm("Apagar TUDO de "+lbl+"? O que continua nos meses seguintes passa a começar no mês seguinte. Não dá para desfazer."))return;
  if(prompt("Para confirmar, digite "+lbl)!==lbl)return;
@@ -156,14 +155,12 @@ $("ig").onchange=()=>{$("lcomp").style.display=["parcela","avulsa"].includes($("
  alert("Mês "+lbl+" apagado.")};
 $("tadd").onclick=async()=>{const v=parseFloat($("tval").value);if(!v||!$("tdesc").value||!$("tini").value)return alert("Preencha compra, valor e mês inicial.");await addDoc(collection(db,"terceiros"),{pessoa:$("tpe").value,desc:$("tdesc").value,valor:v,inicio:$("tini").value,parcelas:+$("tpar").value||0});$("tdesc").value=$("tval").value=""};
 $("sc").onclick=()=>setDoc(doc(db,"cartoes",$("mes").value),{v:[0,1,2].map(k=>parseFloat($("c"+k).value)||0),at:new Date().toISOString().slice(0,10)});
-document.body.onclick=async e=>{const tr=e.target.closest("tr[data-m]");if(tr){$("mes").value=tr.dataset.m;render();return}const b=e.target.closest("button[data-a]");if(!b)return;const{a,id,c}=b.dataset;
+document.body.onclick=async e=>{if(document.body.dataset.r)return;const tr=e.target.closest("tr[data-m]");if(tr){$("mes").value=tr.dataset.m;render();return}const b=e.target.closest("button[data-a]");if(!b)return;const{a,id,c}=b.dataset;
  if(a==="del"&&confirm("Excluir este lançamento?"))await deleteDoc(doc(db,c,id));
  if(a==="tpg"){const mm=$("mes").value,t=terc.find(x=>x.id===id);await updateDoc(doc(db,"terceiros",id),{["pago."+mm]:!pg(t,mm)})}
  if(a==="taj"){const mm=$("mes").value,t=terc.find(x=>x.id===id),v=prompt("Valor para "+mm+":",val(t,mm));if(v!==null&&!isNaN(parseFloat(v.replace(",","."))))await updateDoc(doc(db,"terceiros",id),{["aj."+mm]:parseFloat(v.replace(",","."))})}
  if(a==="bol"){const it=itens.find(x=>x.id===id);await updateDoc(doc(db,"itens",id),{boleto:!it.boleto})}
  if(a==="pg"){const mm=b.dataset.m||$("mes").value,it=itens.find(x=>x.id===id);await updateDoc(doc(db,"itens",id),{["pago."+mm]:!pg(it,mm)})}
- if(a==="sa")await addS(b.dataset.cat);
- if(a==="su"){const m=$("mes").value,cat=b.dataset.cat,arr=rawS(m,cat);if(arr.length)await setS(m,cat,arr.slice(0,-1))}
  if(a==="fx"){const it=itens.find(x=>x.id===id),cur=$("mes").value,ml=prompt("Ajustar "+it.desc+" em qual mês? (mm/aa)",cur.slice(5)+"/"+cur.slice(2,4));if(!ml)return;const mt=ml.match(/^(\d{1,2})\/(\d{2})$/);if(!mt)return alert("Use o formato mm/aa, ex.: 11/26");const mm="20"+mt[2]+"-"+mt[1].padStart(2,"0"),v=prompt("Valor de "+ml+":",val(it,mm));if(v!==null&&!isNaN(parseFloat(v.replace(",","."))))await updateDoc(doc(db,"itens",id),{["aj."+mm]:parseFloat(v.replace(",","."))})}
  if(a==="aj"){const m=$("mes").value,it=itens.find(x=>x.id===id),v=prompt("Valor para "+m+":",val(it,m));if(v!==null&&!isNaN(parseFloat(v)))await updateDoc(doc(db,"itens",id),{["aj."+m]:parseFloat(v.replace(",","."))})}};
 $("ai").onclick=async()=>{const v=parseFloat($("iv").value);if(!v||!$("id").value||!$("ii").value)return alert("Preencha descrição, valor e mês inicial.");
