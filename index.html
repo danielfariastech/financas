@@ -21,7 +21,7 @@ button{cursor:pointer}.p{background:var(--ac);color:#fff;border-color:var(--ac)}
 
 <div id="app" class="hide">
 <div class="row" style="margin-bottom:12px"><h1 style="flex:2 1 200px">💰 Finanças do Casal</h1>
-<input type="month" id="mes"><select id="pes"><option>Todos</option><option>Daniel</option><option>Regiane</option><option>Casal</option></select><button id="out">Sair</button></div>
+<input type="month" id="mes"><select id="pes"><option>Todos</option><option>Daniel</option><option>Regiane</option><option>Casal</option></select><button id="ocb"></button><button id="out">Sair</button></div>
 
 <div class="g g4"><div class="card"><div class="m">Receitas</div><div class="big r" id="kr"></div></div>
 <div class="card"><div class="m">Despesas</div><div class="big d" id="kd"></div></div>
@@ -63,7 +63,8 @@ import{getFirestore,collection,addDoc,deleteDoc,updateDoc,setDoc,doc,onSnapshot}
 
 const firebaseConfig={apiKey:"AIzaSyA9CAw5fkwM5-wU5jKyXALJnM6oRig3ZVo",authDomain:"financas-pessoais-f6052.firebaseapp.com",projectId:"financas-pessoais-f6052",storageBucket:"financas-pessoais-f6052.firebasestorage.app",messagingSenderId:"235846742963",appId:"1:235846742963:web:f9877b71b6e66ca2d911c6"};
 
-const $=i=>document.getElementById(i),brl=n=>n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+let H=false;try{H=localStorage.getItem("oc")==="1"}catch(e){}
+const $=i=>document.getElementById(i),brl=n=>H?"R$ ••••":n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 const CATS=["Lanches","Mercantil","Açaí","Almoço","Café da Manhã","Shalom","Uber","Diversos"],SUMC=["Café da Manhã","Uber","Almoço"],COLS=["Diversos","Mercantil","Lanches","Açaí","Shalom"];
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
 let somas={},cafes={},terc=[],cart={},itens=[],gastos=[],metas={economia:20,orc:{}},subs=[];
@@ -154,6 +155,8 @@ function render(){
  const tf=fnx?"l|"+fnx:fa;fnx=null;if(tf){const e=document.querySelector((tf[0]==="l"?"[data-nl=":"[data-nv=")+'"'+tf.slice(2)+'"]');if(e)e.focus()}}
 }
 $("mes").onchange=$("pes").onchange=render;
+const ocl=()=>{$("ocb").textContent=H?"👁 Mostrar valores":"🙈 Ocultar valores"};ocl();
+$("ocb").onclick=()=>{H=!H;try{localStorage.setItem("oc",H?"1":"0")}catch(e){}ocl();render()};
 const cmp=t=>{const x=t.match(/^(\d\d)\/(\d\d)\/(\d\d)$/);return x?"20"+x[3]+"-"+x[2]+"-"+x[1]:""};
 $("icomp").oninput=()=>{const d=$("icomp").value.replace(/\D/g,"").slice(0,6);$("icomp").value=d.length>4?d.slice(0,2)+"/"+d.slice(2,4)+"/"+d.slice(4):d.length>2?d.slice(0,2)+"/"+d.slice(2):d};
 $("orc").onkeydown=e=>{if(e.key!=="Enter")return;const t=e.target;if(t.dataset.nl)document.querySelector('[data-nv="'+t.dataset.nl+'"]').focus();else if(t.dataset.nv)addE(t.dataset.nv)};
