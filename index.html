@@ -28,20 +28,12 @@ button{cursor:pointer}.p{background:var(--ac);color:#fff;border-color:var(--ac)}
 <div class="card"><div class="m">Saldo</div><div class="big" id="ks"></div></div>
 <div class="card"><div class="m">Economia</div><div class="big" id="ke"></div></div></div>
 
-<div class="g">
-<div class="card"><h2>Novo lançamento</h2><div class="row">
-<select id="ig"><option value="fixa">Despesa fixa</option><option value="parcela">Parcelada</option><option value="avulsa">À vista</option><option value="receita">Receita</option></select>
-<input id="id" placeholder="Descrição" style="flex:2 1 160px"><input id="iv" type="number" step="0.01" placeholder="Valor">
-<input id="idia" type="number" min="1" max="31" placeholder="Dia"><input id="ii" type="month"><input id="ip" type="number" min="0" placeholder="Parcelas (0 = sem fim)">
-<select id="ipe"><option>Casal</option><option>Daniel</option><option>Regiane</option></select><label class="m" id="lcomp" style="flex:1 1 150px;display:none;gap:4px">Data da compra<input id="icomp" placeholder="dd/mm/aa" maxlength="8" inputmode="numeric"></label><button class="p" id="ai">Adicionar</button></div></div>
-</div>
-
+<div class="card"><h2 id="anot">Despesas fixas</h2><div class="m" style="margin-bottom:8px">Só as despesas fixas (as faturas de cartão não entram). 🟩 Pago · 🟥 Não pago. Toque em um valor para marcar. <span id="pgres"></span></div>
+<div class="sc"><table><thead id="ah"></thead><tbody id="ab"></tbody></table></div></div>
 <div class="g" style="grid-template-columns:1fr">
 <div class="card"><h2>Lançamentos do mês <span class="m">(✎ ajusta o valor só neste mês · as despesas fixas ficam no card Despesas fixas)</span></h2><div class="sc"><table><tbody id="li"></tbody></table></div></div>
 <div class="card"><h2>Gastos por categoria</h2><div class="m" style="margin-bottom:10px">Digite o local e o valor e aperte Enter para somar. Esses gastos são sempre divididos entre o casal.</div><div id="orc"></div>
 </div></div>
-<div class="card"><h2 id="anot">Despesas fixas</h2><div class="m" style="margin-bottom:8px">Só as despesas fixas (as faturas de cartão não entram). 🟩 Pago · 🟥 Não pago. Toque em um valor para marcar. <span id="pgres"></span></div>
-<div class="sc"><table><thead id="ah"></thead><tbody id="ab"></tbody></table></div></div>
 <div class="card"><h2>Planejamento até dez/2027</h2><div class="big" id="plt"></div>
 <div class="m" style="margin-bottom:8px">Sobra = receitas − despesas já cadastradas em cada mês. Toque em um mês para abri-lo. Fixas e receitas "sem fim" se repetem até dez/2027. Faturas de cartão não somam nas despesas, porque as compras já entram.</div>
 <div class="sc"><table><thead><tr><th>Mês</th><th>Receitas</th><th>Despesas</th><th>Pode gastar</th></tr></thead><tbody id="pl"></tbody></table></div></div>
@@ -53,6 +45,14 @@ button{cursor:pointer}.p{background:var(--ac);color:#fff;border-color:var(--ac)}
 <div class="row"><select id="tpe"><option>Maira</option><option>Rodiney</option><option>Cleyton</option></select><input id="tdesc" placeholder="Compra" style="flex:2 1 150px"><input id="tval" type="number" step="0.01" placeholder="Valor"><input id="tini" type="month"><input id="tpar" type="number" min="0" placeholder="Parcelas (0 = sem fim)"><button class="p" id="tadd">Adicionar</button></div>
 <div class="m" id="tres" style="margin:10px 0"></div><div id="tl"></div>
 <h2 style="margin-top:14px">Visão de nov/2026 a nov/2027</h2><div class="sc"><table><thead><tr><th>Mês</th><th>Maira</th><th>Rodiney</th><th>Cleyton</th></tr></thead><tbody id="tb"></tbody></table></div></div>
+<div class="g">
+<div class="card"><h2>Novo lançamento</h2><div class="row">
+<select id="ig"><option value="fixa">Despesa fixa</option><option value="parcela">Parcelada</option><option value="avulsa">À vista</option><option value="receita">Receita</option></select>
+<input id="id" placeholder="Descrição" style="flex:2 1 160px"><input id="iv" type="number" step="0.01" placeholder="Valor">
+<input id="idia" type="number" min="1" max="31" placeholder="Dia"><input id="ii" type="month"><input id="ip" type="number" min="0" placeholder="Parcelas (0 = sem fim)">
+<select id="ipe"><option>Casal</option><option>Daniel</option><option>Regiane</option></select><label class="m" id="lcomp" style="flex:1 1 150px;display:none;gap:4px">Data da compra<input id="icomp" placeholder="dd/mm/aa" maxlength="8" inputmode="numeric"></label><button class="p" id="ai">Adicionar</button></div></div>
+</div>
+
 <div class="m" style="text-align:center;margin:18px 0"><button id="lm">Apagar o mês selecionado e começar a partir do mês seguinte</button></div>
 </div>
 
@@ -64,7 +64,7 @@ import{getFirestore,collection,addDoc,deleteDoc,updateDoc,setDoc,doc,onSnapshot}
 const firebaseConfig={apiKey:"AIzaSyA9CAw5fkwM5-wU5jKyXALJnM6oRig3ZVo",authDomain:"financas-pessoais-f6052.firebaseapp.com",projectId:"financas-pessoais-f6052",storageBucket:"financas-pessoais-f6052.firebasestorage.app",messagingSenderId:"235846742963",appId:"1:235846742963:web:f9877b71b6e66ca2d911c6"};
 
 const $=i=>document.getElementById(i),brl=n=>n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
-const CATS=["Lanches","Mercantil","Açaí","Almoço","Café da Manhã","Shalom","Uber","Diversos"],SUMC=["Café da Manhã","Uber","Almoço"],COLS=["Diversos","Mercantil","Lanches","Shalom"];
+const CATS=["Lanches","Mercantil","Açaí","Almoço","Café da Manhã","Shalom","Uber","Diversos"],SUMC=["Café da Manhã","Uber","Almoço"],COLS=["Diversos","Mercantil","Lanches","Açaí","Shalom"];
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
 let somas={},cafes={},terc=[],cart={},itens=[],gastos=[],metas={economia:20,orc:{}},subs=[];
 const hoje=new Date().toISOString().slice(0,10);
