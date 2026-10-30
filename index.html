@@ -14,7 +14,7 @@ input,select,button{font:inherit;color:var(--tx);background:var(--bg);border:1px
 button{cursor:pointer}.p{background:var(--ac);color:#fff;border-color:var(--ac)}.big{font-size:21px;font-weight:700}.m{color:var(--m);font-size:13px}
 .bar{height:8px;background:var(--bd);border-radius:6px;overflow:hidden}.bar i{display:block;height:100%}
 .sc{overflow-x:auto}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:6px;border-bottom:1px solid var(--bd);white-space:nowrap}
-.r{color:var(--ok)}.d{color:var(--bad)}.rp td{background:rgba(22,163,74,.14)}.rn td{background:rgba(220,38,38,.12)}.cel{width:100%;border:0;border-radius:6px;padding:5px 8px;cursor:pointer;color:var(--tx)}.cp{background:rgba(22,163,74,.3)}.cn{background:rgba(220,38,38,.28)}body[data-r="1"] .x,body[data-r="1"] .sm{display:none}body[data-r="1"] .cel{pointer-events:none}.x{border:0;background:none;color:var(--m);padding:2px 6px;flex:0}
+.r{color:var(--ok)}.d{color:var(--bad)}.rp td{background:rgba(22,163,74,.14)}.rn td{background:rgba(220,38,38,.12)}.cel{width:100%;border:0;border-radius:6px;padding:5px 4px;font-size:13px;cursor:pointer;color:var(--tx)}.cp{background:rgba(22,163,74,.3)}.cn{background:rgba(220,38,38,.28)}body[data-r="1"] .x,body[data-r="1"] .sm{display:none}body[data-r="1"] .cel{pointer-events:none}.x{border:0;background:none;color:var(--m);padding:2px 6px;flex:0}
 #login{text-align:center;padding:60px 0}.hide{display:none}
 </style></head><body><main>
 <div id="login"><h1>💰 Finanças do Casal</h1><p class="m">Entre com a conta Google autorizada.</p><button class="p" id="in">Entrar com Google</button><p class="d" id="err"></p></div>
@@ -131,10 +131,11 @@ function render(){
  $("pgres").innerHTML=`Pago <b class="r">${brl(ps)}</b> · Falta pagar <b class="d">${brl(pn)}</b>`;
  const Y=m.slice(0,4),MN=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"],mk=k=>Y+"-"+String(k+1).padStart(2,"0");
  $("anot").textContent="Despesas fixas "+Y;
- $("ah").innerHTML="<tr><th>Dia</th><th>Descrição</th>"+MN.map(n=>"<th>"+n+"</th>").join("")+"</tr>";
  const AD=itens.filter(i=>i.grupo!=="receita"&&bol(i)&&pw(i)>0&&MN.some((_,k)=>ativo(i,mk(k)))).sort((a,b)=>(a.dia||0)-(b.dia||0)||a.desc.localeCompare(b.desc));
+ const VK=MN.map((_,k)=>k).filter(k=>AD.some(i=>ativo(i,mk(k))));
+ $("ah").innerHTML="<tr><th>Dia</th><th>Descrição</th>"+VK.map(k=>"<th>"+MN[k]+"</th>").join("")+"</tr>";
  const tt=Array(12).fill(0),tp=Array(12).fill(0);
- $("ab").innerHTML=AD.map(i=>"<tr><td>"+(i.dia||"")+"</td><td>"+esc(i.desc)+' <button class="x" data-a="fx" data-id="'+i.id+'">✎</button><button class="x" data-a="del" data-c="itens" data-id="'+i.id+'">✕</button></td>'+MN.map((_,k)=>{const mm=mk(k);if(!ativo(i,mm))return'<td class="m">-</td>';const v=val(i,mm)*pw(i);tt[k]+=v;if(pg(i,mm))tp[k]+=v;return`<td><button class="cel ${pg(i,mm)?"cp":"cn"}" data-a="pg" data-id="${i.id}" data-m="${mm}">${brl(v)}</button></td>`}).join("")+"</tr>").join("")+"<tr><th></th><th>Total</th>"+tt.map(v=>"<th>"+brl(v)+"</th>").join("")+"</tr><tr><th></th><th>Falta pagar</th>"+tt.map((v,k)=>'<th class="d">'+brl(v-tp[k])+"</th>").join("")+"</tr>";
+ $("ab").innerHTML=AD.map(i=>"<tr><td>"+(i.dia||"")+"</td><td>"+esc(i.desc)+' <button class="x" data-a="fx" data-id="'+i.id+'">✎</button><button class="x" data-a="del" data-c="itens" data-id="'+i.id+'">✕</button></td>'+VK.map(k=>{const mm=mk(k);if(!ativo(i,mm))return'<td class="m">-</td>';const v=val(i,mm)*pw(i);tt[k]+=v;if(pg(i,mm))tp[k]+=v;return`<td><button class="cel ${pg(i,mm)?"cp":"cn"}" data-a="pg" data-id="${i.id}" data-m="${mm}">${brl(v)}</button></td>`}).join("")+"</tr>").join("")+"<tr><th></th><th>Total</th>"+VK.map(k=>"<th>"+brl(tt[k])+"</th>").join("")+"</tr><tr><th></th><th>Falta pagar</th>"+VK.map(k=>'<th class="d">'+brl(tt[k]-tp[k])+"</th>").join("")+"</tr>";
  let y=2026,mo=11,acc=0,TR=0,TD=0,rows="";
  while(y<2028){const mm=y+"-"+String(mo).padStart(2,"0"),[r,d]=tot(mm);acc+=r-d;TR+=r;TD+=d;
   rows+=`<tr data-m="${mm}" style="cursor:pointer"><td>${String(mo).padStart(2,"0")}/${y}</td><td class="r">${brl(r)}</td><td class="d">${brl(d)}</td><td class="${r-d>=0?"r":"d"}">${brl(r-d)}</td></tr>`;if(++mo>12){mo=1;y++}}
