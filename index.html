@@ -97,7 +97,7 @@ onAuthStateChanged(auth,u=>{
  subs.forEach(f=>f());subs=[];
  $("login").classList.toggle("hide",!!u);$("app").classList.toggle("hide",!u);
  if(!u)return;
- const isR=/regiane/i.test(u.email||"");document.body.dataset.r=isR?"1":"";$("pes").value=isR?"Regiane":"Daniel";$("pes").disabled=isR;if(isR){["ai","orc"].forEach(id=>$(id).closest(".card").style.display="none");$("lm").parentElement.style.display="none";document.querySelector(".g4").style.display="none"}
+ const isR=/regiane/i.test(u.email||"");document.body.dataset.r=isR?"1":"";$("pes").value=isR?"Regiane":"Daniel";$("pes").disabled=isR;if(isR){["ai","orc"].forEach(id=>$(id).closest(".card").style.display="none");$("lm").parentElement.style.display="none"}
  const er=e=>{$("err").textContent="Sem permissão ou erro: "+e.message;$("login").classList.remove("hide");$("app").classList.add("hide")};
  subs.push(onSnapshot(collection(db,"itens"),s=>{itens=s.docs.map(d=>({id:d.id,...d.data()}));itens.filter(i=>i.cat==="Merenda").forEach(i=>updateDoc(doc(db,"itens",i.id),{cat:"Café da Manhã"}));render();migr()},er));
  subs.push(onSnapshot(collection(db,"cartoes"),s=>{cart={};s.docs.forEach(d=>cart[d.id]=d.data());render()},er));
@@ -127,6 +127,7 @@ function render(){
  $("tres").innerHTML=`Total do mês: recebido <b class="r">${brl(rc)}</b> · falta receber <b class="d">${brl(fr)}</b>`;
  const TY=m.slice(0,4);
  $("tb").innerHTML=Array.from({length:13},(_,k)=>{const t=2026*12+10+k,yy=Math.floor(t/12),mn=t%12+1,mm=yy+"-"+String(mn).padStart(2,"0");return`<tr data-m="${mm}" style="cursor:pointer${mm===m?";font-weight:700":""}"><td>${String(mn).padStart(2,"0")}/${yy}</td>${TP.map(n=>{const L=terc.filter(t=>t.pessoa===n&&ativo(t,mm));if(!L.length)return'<td class="m">-</td>';const tot=L.reduce((a,t)=>a+val(t,mm),0),ok=L.every(t=>pg(t,mm));return`<td><span class="cel ${ok?"cp":"cn"}" style="display:block">${brl(tot)}</span></td>`}).join("")}</tr>`}).join("");}
+ ["kr","ks","ke"].forEach(id=>$(id).closest(".card").style.display=document.body.dataset.r||p==="Regiane"?"none":"");
  ["pl","cb","tl"].forEach(id=>$(id).closest(".card").style.display=document.body.dataset.r||p==="Regiane"?"none":"");
  let ps=0,pn=0;I.forEach(i=>{if(i.grupo!=="receita"&&bol(i)){const v=val(i,m)*pw(i);pg(i,m)?ps+=v:pn+=v}});
  $("pgres").innerHTML=`Pago <b class="r">${brl(ps)}</b> · Falta pagar <b class="d">${brl(pn)}</b>`;
