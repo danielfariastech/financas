@@ -28,7 +28,7 @@ button{cursor:pointer}.p{background:var(--ac);color:#fff;border-color:var(--ac)}
 <div class="card"><div class="m">Saldo</div><div class="big" id="ks"></div></div>
 <div class="card"><div class="m">Economia</div><div class="big" id="ke"></div></div></div>
 
-<div class="card"><h2 id="anot">Despesas fixas</h2><div class="m" style="margin-bottom:8px">Só as despesas fixas (as faturas de cartão não entram). 🟩 Pago · 🟥 Não pago. Toque em um valor para marcar. <span id="pgres"></span></div>
+<div class="card"><h2 id="anot">Despesas fixas</h2><div class="m" style="margin-bottom:8px">Só as despesas fixas (as faturas de cartão não entram). 🟩 Pago · 🟥 Não pago. Toque em um valor para marcar.</div>
 <div class="sc"><table><thead id="ah"></thead><tbody id="ab"></tbody></table></div></div>
 <div class="g" style="grid-template-columns:1fr">
 <div class="card"><h2>Lançamentos do mês <span class="m">(✎ ajusta o valor só neste mês · as despesas fixas ficam no card Despesas fixas)</span></h2><div class="sc"><table><tbody id="li"></tbody></table></div></div>
@@ -129,15 +129,13 @@ function render(){
  $("tb").innerHTML=Array.from({length:13},(_,k)=>{const t=2026*12+10+k,yy=Math.floor(t/12),mn=t%12+1,mm=yy+"-"+String(mn).padStart(2,"0");return`<tr data-m="${mm}" style="cursor:pointer${mm===m?";font-weight:700":""}"><td>${String(mn).padStart(2,"0")}/${yy}</td>${TP.map(n=>{const L=terc.filter(t=>t.pessoa===n&&ativo(t,mm));if(!L.length)return'<td class="m">-</td>';const tot=L.reduce((a,t)=>a+val(t,mm),0),ok=L.every(t=>pg(t,mm));return`<td><span class="cel ${ok?"cp":"cn"}" style="display:block">${brl(tot)}</span></td>`}).join("")}</tr>`}).join("");}
  ["kr","ks","ke"].forEach(id=>$(id).closest(".card").style.display=document.body.dataset.r||p==="Regiane"?"none":"");
  ["pl","cb","tl"].forEach(id=>$(id).closest(".card").style.display=document.body.dataset.r||p==="Regiane"?"none":"");
- let ps=0,pn=0;I.forEach(i=>{if(i.grupo!=="receita"&&bol(i)){const v=val(i,m)*pw(i);pg(i,m)?ps+=v:pn+=v}});
- $("pgres").innerHTML=`Pago <b class="r">${brl(ps)}</b> · Falta pagar <b class="d">${brl(pn)}</b>`;
  const Y=m.slice(0,4),MN=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"],mk=k=>Y+"-"+String(k+1).padStart(2,"0");
  $("anot").textContent="Despesas fixas "+Y;
  const AD=itens.filter(i=>i.grupo!=="receita"&&bol(i)&&pw(i)>0&&MN.some((_,k)=>ativo(i,mk(k)))).sort((a,b)=>(a.dia||0)-(b.dia||0)||a.desc.localeCompare(b.desc));
  const VK=MN.map((_,k)=>k).filter(k=>AD.some(i=>ativo(i,mk(k))));
  $("ah").innerHTML="<tr><th>Dia</th><th>Descrição</th>"+VK.map(k=>"<th>"+MN[k]+"</th>").join("")+"</tr>";
  const tt=Array(12).fill(0),tp=Array(12).fill(0);
- $("ab").innerHTML=AD.map(i=>"<tr><td>"+(i.dia||"")+"</td><td>"+esc(i.desc)+' <button class="x" data-a="fx" data-id="'+i.id+'">✎</button><button class="x" data-a="del" data-c="itens" data-id="'+i.id+'">✕</button></td>'+VK.map(k=>{const mm=mk(k);if(!ativo(i,mm))return'<td class="m">-</td>';const v=val(i,mm)*pw(i);tt[k]+=v;if(pg(i,mm))tp[k]+=v;return`<td><button class="cel ${pg(i,mm)?"cp":"cn"}" data-a="pg" data-id="${i.id}" data-m="${mm}">${brl(v)}</button></td>`}).join("")+"</tr>").join("")+"<tr><th></th><th>Total</th>"+VK.map(k=>"<th>"+brl(tt[k])+"</th>").join("")+"</tr><tr><th></th><th>Falta pagar</th>"+VK.map(k=>'<th class="d">'+brl(tt[k]-tp[k])+"</th>").join("")+"</tr>";
+ $("ab").innerHTML=AD.map(i=>"<tr><td>"+(i.dia||"")+"</td><td>"+esc(i.desc)+' <button class="x" data-a="fx" data-id="'+i.id+'">✎</button><button class="x" data-a="del" data-c="itens" data-id="'+i.id+'">✕</button></td>'+VK.map(k=>{const mm=mk(k);if(!ativo(i,mm))return'<td class="m">-</td>';const v=val(i,mm)*pw(i);tt[k]+=v;if(pg(i,mm))tp[k]+=v;return`<td><button class="cel ${pg(i,mm)?"cp":"cn"}" data-a="pg" data-id="${i.id}" data-m="${mm}">${brl(v)}</button></td>`}).join("")+"</tr>").join("")+"<tr><th></th><th>Total</th>"+VK.map(k=>"<th>"+brl(tt[k])+"</th>").join("")+"</tr>";
  let y=2026,mo=11,acc=0,TR=0,TD=0,rows="";
  while(y<2028){const mm=y+"-"+String(mo).padStart(2,"0"),[r,d]=tot(mm);acc+=r-d;TR+=r;TD+=d;
   rows+=`<tr data-m="${mm}" style="cursor:pointer"><td>${String(mo).padStart(2,"0")}/${y}</td><td class="r">${brl(r)}</td><td class="d">${brl(d)}</td><td class="${r-d>=0?"r":"d"}">${brl(r-d)}</td></tr>`;if(++mo>12){mo=1;y++}}
