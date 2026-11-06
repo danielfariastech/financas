@@ -108,7 +108,7 @@ onAuthStateChanged(auth,u=>{
 
 function render(){
  const m=$("mes").value,p=$("pes").value,pw=x=>{const dv=["Diversos","Casa","Casal"].includes(x.pessoa);return p==="Todos"?1:p==="Casal"?(dv?1:0):dv?.5:(x.pessoa===p?1:0)},f=x=>pw(x)>0;
- const rem=i=>i.parcelas?i.parcelas-(mi(m)-mi(i.inicio)+1):0,kk=i=>i.compra||(m+"-"+String(i.dia||0).padStart(2,"0")),fd=d=>d.slice(8,10)+"/"+d.slice(5,7)+"/"+d.slice(2,4),I=itens.filter(i=>ativo(i,m)&&f(i)).sort((a,b)=>((RK[a.grupo]??9)-(RK[b.grupo]??9))||(a.grupo==="parcela"?rem(b)-rem(a):0)||kk(a).localeCompare(kk(b))); let rec=0,des=0;I.forEach(i=>{const v=val(i,m)*pw(i);if(i.grupo==="receita")rec+=v;else if(i.grupo!=="cartao")des+=v});
+ const pr=i=>i.pessoa==="Daniel"?0:i.pessoa==="Regiane"?1:2,rem=i=>i.parcelas?i.parcelas-(mi(m)-mi(i.inicio)+1):0,kk=i=>i.compra||(m+"-"+String(i.dia||0).padStart(2,"0")),fd=d=>d.slice(8,10)+"/"+d.slice(5,7)+"/"+d.slice(2,4),I=itens.filter(i=>ativo(i,m)&&f(i)).sort((a,b)=>((RK[a.grupo]??9)-(RK[b.grupo]??9))||(a.grupo==="parcela"?(pr(a)-pr(b))||(rem(b)-rem(a))||(b.valor-a.valor):0)||kk(a).localeCompare(kk(b))); let rec=0,des=0;I.forEach(i=>{const v=val(i,m)*pw(i);if(i.grupo==="receita")rec+=v;else if(i.grupo!=="cartao")des+=v});
  const por={};I.forEach(i=>{if(i.grupo!=="receita"&&i.grupo!=="cartao"&&i.cat)por[i.cat]=(por[i.cat]||0)+val(i,m)});
  const cnt={};CATS.forEach(c=>ents(m,c).forEach(e=>{const w=pw({pessoa:e.p});if(w>0){por[c]=(por[c]||0)+e.v;cnt[c]=(cnt[c]||0)+1;des+=e.v*w}}));
  const sal=rec-des,eco=rec?sal/rec*100:0;
