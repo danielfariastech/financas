@@ -32,7 +32,7 @@ button{cursor:pointer}.p{background:var(--ac);color:#fff;border-color:var(--ac)}
 <div class="sc"><table><thead id="ah"></thead><tbody id="ab"></tbody></table></div></div>
 <div class="g" style="grid-template-columns:1fr">
 <div class="card"><h2>Lançamentos do mês <span class="m">(✎ ajusta o valor só neste mês · as despesas fixas ficam no card Despesas fixas)</span></h2><div class="sc"><table><tbody id="li"></tbody></table></div></div>
-<div class="card"><h2>Gastos por categoria</h2><div class="m" style="margin-bottom:10px">Digite o local e o valor e aperte Enter para somar. Esses gastos são sempre divididos entre o casal.</div><div id="orc"></div>
+<div class="card"><h2>Gastos por categoria</h2><div class="row" style="margin-bottom:10px"><span class="m" style="flex:2 1 220px">Digite só o valor no local e aperte Enter. Gastos divididos entre o casal.</span><button id="sdet" style="flex:0 0 auto"></button></div><div id="orc"></div>
 </div></div>
 <div class="card"><h2>Planejamento até dez/2027</h2><div class="big" id="plt"></div>
 <div class="m" style="margin-bottom:8px">Sobra = receitas − despesas já cadastradas em cada mês. Toque em um mês para abri-lo. Fixas e receitas "sem fim" se repetem até dez/2027. Faturas de cartão não somam nas despesas, porque as compras já entram.</div>
@@ -67,6 +67,7 @@ let H=false;try{H=localStorage.getItem("oc")==="1"}catch(e){}
 const $=i=>document.getElementById(i),brl=n=>H?"R$ ••••":n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 const CATS=["Lanches","Mercantil","Açaí","Almoço","Café da Manhã","Shalom","Uber","Diversos"],SUMC=["Café da Manhã","Uber","Almoço"],COLS=["Diversos","Mercantil","Lanches","Açaí","Shalom"];
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
+let locais={},showDet=false;
 let somas={},cafes={},terc=[],cart={},itens=[],gastos=[],metas={economia:20,orc:{}},subs=[];
 const hoje=new Date().toISOString().slice(0,10);
 $("mes").value=$("ii").value=$("tini").value=hoje.slice(0,7);
@@ -78,8 +79,7 @@ const val=(it,m)=>it.aj&&it.aj[m]!=null?it.aj[m]:it.valor;
 const rawS=(mm,c)=>c==="Café da Manhã"?(cafes[mm]||[]):(somas[mm+"|"+c]||[]);
 const ents=(mm,c)=>rawS(mm,c).map(x=>{x=typeof x==="number"?{v:x,p:"Daniel"}:x;return COLS.includes(c)?{...x,p:"Casal"}:x});
 const setS=(mm,c,a)=>c==="Café da Manhã"?setDoc(doc(db,"cafes",mm),{v:a}):setDoc(doc(db,"somas",mm+"|"+c),{v:a});
-let fnx=null;
-const addE=async c=>{const li=document.querySelector('[data-nl="'+c+'"]'),vi=document.querySelector('[data-nv="'+c+'"]'),v=parseFloat(vi.value),m=$("mes").value;if(!v||v<=0)return;const l=li.value.trim();li.value="";vi.value="";fnx=c;await setS(m,c,[...rawS(m,c),{v,p:"Casal",l}])};
+const addV=async(c,l,inp)=>{const v=parseFloat(inp.value),m=$("mes").value;if(!v||v<=0)return;inp.value="";await setS(m,c,[...rawS(m,c),{v,p:"Casal",l}])};
 const addC=async c=>{const i=document.querySelector('[data-cv="'+c+'"]'),v=parseFloat(i.value),m=$("mes").value;if(!v||v<=0)return;await setS(m,c,[...rawS(m,c),{v,p:"Daniel"}]);i.value=""};
 let lc=false,ls=false;const done=new Set();
 const migr=async()=>{if(document.body.dataset.r||!lc||!ls)return;const nc=i=>i.cat==="Merenda"?"Café da Manhã":i.cat,sh=i=>["Diversos","Casa","Casal"].includes(i.pessoa),tc=i=>SUMC.includes(nc(i))?nc(i):(sh(i)?(COLS.includes(i.cat)?i.cat:"Diversos"):null);
@@ -103,6 +103,7 @@ onAuthStateChanged(auth,u=>{
  subs.push(onSnapshot(collection(db,"cartoes"),s=>{cart={};s.docs.forEach(d=>cart[d.id]=d.data());render()},er));
  subs.push(onSnapshot(collection(db,"cafes"),s=>{cafes={};s.docs.forEach(d=>cafes[d.id]=d.data().v||[]);lc=true;render();migr()},er));
  subs.push(onSnapshot(collection(db,"somas"),s=>{somas={};s.docs.forEach(d=>somas[d.id]=d.data().v||[]);ls=true;render();migr()},er));
+ subs.push(onSnapshot(doc(db,"config","locais"),s=>{locais=s.exists()?s.data():{};render()},er));
  subs.push(onSnapshot(collection(db,"terceiros"),s=>{terc=s.docs.map(d=>({id:d.id,...d.data()}));render()},er));
 });
 
@@ -149,18 +150,28 @@ function render(){
  const svv={};document.querySelectorAll("[data-cv]").forEach(e=>{svv[e.dataset.cv]=e.value});const faa=document.activeElement&&document.activeElement.dataset?document.activeElement.dataset.cv:null;
  $("li").innerHTML=I.filter(i=>i.grupo!=="fixa"&&i.grupo!=="cartao"&&i.grupo!=="receita").map(i=>`<tr class="${conf(m)?(pg(i,m)?"rp":"rn"):""}"><td>${i.compra?fd(i.compra):(i.dia?"Dia "+i.dia:"")}</td><td>${esc(i.desc)}</td><td class="m">${nome[i.grupo]}${i.grupo==="cartao"?" (só pagamento)":""} · ${["Diversos","Casa"].includes(i.pessoa)?"Casal":i.pessoa}${i.cat?" · "+i.cat:""}${pw(i)===.5?" ½":""}${i.parcelas>1?` · ${mi(m)-mi(i.inicio)+1}/${i.parcelas}`:""}${i.total?" · total "+brl(i.total):""}</td><td class="${i.grupo==="receita"?"r":""}">${brl(val(i,m)*pw(i))}</td><td>${conf(m)?`<button class="x" data-a="pg" data-id="${i.id}">${pg(i,m)?"✅":"⬜"}</button>`:""}<button class="x" data-a="aj" data-id="${i.id}">✎</button><button class="x" data-a="del" data-c="itens" data-id="${i.id}">✕</button></td></tr>`).join("")+dRow+sRows||'<tr><td class="m">Nada neste mês.</td></tr>';
  document.querySelectorAll("[data-cv]").forEach(e=>{if(svv[e.dataset.cv])e.value=svv[e.dataset.cv]});if(faa){const e=document.querySelector('[data-cv="'+faa+'"]');if(e)e.focus()}
- {const sv={},kf=e=>(e.dataset.nl?"l|"+e.dataset.nl:"v|"+e.dataset.nv);document.querySelectorAll("[data-nl],[data-nv]").forEach(e=>{sv[kf(e)]=e.value});const ae=document.activeElement,fa=ae&&ae.dataset&&(ae.dataset.nl||ae.dataset.nv)?kf(ae):null;let tg=0;
- $("orc").innerHTML='<div style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr))">'+COLS.map(c=>{const E=ents(m,c).map((e,ix)=>({...e,ix})).filter(e=>pw({pessoa:e.p})>0),t=E.reduce((a,e)=>a+e.v,0);tg+=t;
-  return`<div style="border:1px solid var(--bd);border-radius:8px;padding:10px"><div class="row" style="justify-content:space-between;flex-wrap:nowrap;margin-bottom:6px"><b>${c}</b><b>${brl(t)}</b></div>${E.map(e=>`<div class="row ${conf(m)?(e.ok?"ep":"en"):""}" style="flex-wrap:nowrap;gap:6px;padding:2px 4px;border-bottom:1px solid var(--bd)"><span class="m" style="flex:2 1 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(e.l||"—")}</span><span style="flex:1 1 0;text-align:right">${brl(e.v)}</span>${conf(m)?`<button class="x" data-a="ck" data-cat="${c}" data-ix="${e.ix}">${e.ok?"✅":"⬜"}</button>`:""}<button class="x" data-a="sd" data-cat="${c}" data-ix="${e.ix}">✕</button></div>`).join("")}<div class="row" style="flex-wrap:nowrap;gap:6px;margin-top:8px"><input data-nl="${c}" placeholder="Local" style="flex:2 1 0;min-width:0"><input data-nv="${c}" type="number" step="0.01" placeholder="Valor" style="flex:1 1 0;min-width:0"></div></div>`}).join("")+'</div><div class="m" style="margin-top:8px;text-align:right">Total geral: <b>'+brl(tg)+'</b></div>';
- document.querySelectorAll("[data-nl],[data-nv]").forEach(e=>{if(sv[kf(e)])e.value=sv[kf(e)]});
- const tf=fnx?"l|"+fnx:fa;fnx=null;if(tf){const e=document.querySelector((tf[0]==="l"?"[data-nl=":"[data-nv=")+'"'+tf.slice(2)+'"]');if(e)e.focus()}}
+ {const kf=e=>e.dataset.vi!==undefined?"v|"+e.dataset.cat+"|"+e.dataset.l:"n|"+e.dataset.nn,all=()=>[...document.querySelectorAll("[data-vi],[data-nn]")];
+ const sv={};all().forEach(e=>{sv[kf(e)]=e.value});const ae=document.activeElement,fa=ae&&ae.dataset&&(ae.dataset.vi!==undefined||ae.dataset.nn)?kf(ae):null;let tg=0;
+ $("sdet").textContent=showDet?"Fechar lançamentos":"Ver lançamentos";
+ $("orc").innerHTML='<div style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));align-items:start">'+COLS.map(c=>{
+  const E=ents(m,c).map((e,ix)=>({...e,ix})).filter(e=>pw({pessoa:e.p})>0),L=new Map(),al=nm=>{const raw=(nm||"").trim(),k=raw.toLowerCase();if(!L.has(k))L.set(k,{raw,tot:0,n:0,h:0,es:[]});return L.get(k)};
+  Object.keys(somas).filter(k=>k.endsWith("|"+c)).forEach(k=>somas[k].forEach(x=>{if(x&&x.l)al(x.l).h++}));
+  (locais[c]||[]).forEach(al);
+  E.forEach(e=>{const o=al(e.l);o.tot+=e.v;o.n++;o.es.push(e)});
+  const t=E.reduce((a,e)=>a+e.v,0);tg+=t;
+  const rows=[...L.values()].sort((a,b)=>b.tot-a.tot||b.h-a.h||a.raw.localeCompare(b.raw));
+  return`<div style="border:1px solid var(--bd);border-radius:8px;padding:10px"><div class="row" style="justify-content:space-between;flex-wrap:nowrap;margin-bottom:6px"><b>${c}</b><b>${brl(t)}</b></div>${rows.map(o=>{const al2=o.n&&o.es.every(e=>e.ok),st=conf(m)&&o.n?(al2?"ep":"en"):"";
+   return`<div class="${st}" style="border-bottom:1px solid var(--bd);padding:5px 4px"><div class="row" style="flex-wrap:nowrap;gap:6px"><span style="flex:2 1 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(o.raw||"(sem local)")} <span class="m">${o.n?o.n+"×":""}</span></span><b style="flex:1 1 0;text-align:right">${brl(o.tot)}</b>${conf(m)&&o.n?`<button class="x" data-a="ckl" data-cat="${c}" data-l="${esc(o.raw)}" title="Marcar todos">${al2?"✅":"⬜"}</button>`:""}</div><div class="row" style="flex-wrap:nowrap;gap:6px;margin-top:3px"><input data-vi="1" data-cat="${c}" data-l="${esc(o.raw)}" type="number" step="0.01" placeholder="Valor" style="flex:1 1 0;min-width:0"><button data-a="gl" data-cat="${c}" data-l="${esc(o.raw)}">+</button></div>${showDet?o.es.map(e=>`<div class="row ${conf(m)?(e.ok?"ep":"en"):""}" style="flex-wrap:nowrap;gap:6px;padding:2px 4px;margin-top:2px"><span class="m" style="flex:1 1 0;text-align:right">${brl(e.v)}</span>${conf(m)?`<button class="x" data-a="ck" data-cat="${c}" data-ix="${e.ix}">${e.ok?"✅":"⬜"}</button>`:""}<button class="x" data-a="sd" data-cat="${c}" data-ix="${e.ix}">✕</button></div>`).join(""):""}</div>`}).join("")}<div style="margin-top:8px"><input data-nn="${c}" placeholder="+ novo local" style="width:100%"></div></div>`}).join("")+'</div><div class="m" style="margin-top:8px;text-align:right">Total geral: <b>'+brl(tg)+'</b></div>';
+ all().forEach(e=>{if(sv[kf(e)])e.value=sv[kf(e)]});
+ if(fa){const e=all().find(x=>kf(x)===fa);if(e)e.focus()}}
 }
 $("mes").onchange=$("pes").onchange=render;
 const ocl=()=>{$("ocb").textContent=H?"👁 Mostrar valores":"🙈 Ocultar valores"};ocl();
 $("ocb").onclick=()=>{H=!H;try{localStorage.setItem("oc",H?"1":"0")}catch(e){}ocl();render()};
 const cmp=t=>{const x=t.match(/^(\d\d)\/(\d\d)\/(\d\d)$/);return x?"20"+x[3]+"-"+x[2]+"-"+x[1]:""};
 $("icomp").oninput=()=>{const d=$("icomp").value.replace(/\D/g,"").slice(0,6);$("icomp").value=d.length>4?d.slice(0,2)+"/"+d.slice(2,4)+"/"+d.slice(4):d.length>2?d.slice(0,2)+"/"+d.slice(2):d};
-$("orc").onkeydown=e=>{if(e.key!=="Enter")return;const t=e.target;if(t.dataset.nl)document.querySelector('[data-nv="'+t.dataset.nl+'"]').focus();else if(t.dataset.nv)addE(t.dataset.nv)};
+$("orc").onkeydown=e=>{if(e.key!=="Enter")return;const t=e.target;if(t.dataset.vi!==undefined)addV(t.dataset.cat,t.dataset.l,t);else if(t.dataset.nn){const nm=t.value.trim(),c=t.dataset.nn,cur=locais[c]||[];if(!nm)return;t.value="";if(!cur.some(x=>x.toLowerCase()===nm.toLowerCase()))setDoc(doc(db,"config","locais"),{...locais,[c]:[...cur,nm]})}};
+$("sdet").onclick=()=>{showDet=!showDet;render()};
 $("li").onkeydown=e=>{if(e.key==="Enter"&&e.target.dataset.cv)addC(e.target.dataset.cv)};
 $("ig").onchange=()=>{$("iv").placeholder=$("ig").value==="parcela"?"Valor TOTAL da compra":"Valor";$("lcomp").style.display=["parcela","avulsa"].includes($("ig").value)?"grid":"none"};$("lm").onclick=async()=>{const m=$("mes").value,lbl=m.slice(5)+"/"+m.slice(0,4);
  if(!confirm("Apagar TUDO de "+lbl+"? O que continua nos meses seguintes passa a começar no mês seguinte. Não dá para desfazer."))return;
@@ -180,6 +191,8 @@ document.body.onclick=async e=>{if(document.body.dataset.r)return;const tr=e.tar
  if(a==="taj"){const mm=$("mes").value,t=terc.find(x=>x.id===id),v=prompt("Valor para "+mm+":",val(t,mm));if(v!==null&&!isNaN(parseFloat(v.replace(",","."))))await updateDoc(doc(db,"terceiros",id),{["aj."+mm]:parseFloat(v.replace(",","."))})}
  if(a==="bol"){const it=itens.find(x=>x.id===id);await updateDoc(doc(db,"itens",id),{boleto:!it.boleto})}
  if(a==="pg"){const mm=b.dataset.m||$("mes").value,it=itens.find(x=>x.id===id);await updateDoc(doc(db,"itens",id),{["pago."+mm]:!pg(it,mm)})}
+ if(a==="gl")await addV(b.dataset.cat,b.dataset.l,b.previousElementSibling);
+ if(a==="ckl"){const m=$("mes").value,c=b.dataset.cat,l=(b.dataset.l||"").trim().toLowerCase(),arr=rawS(m,c).map(x=>typeof x==="number"?{v:x,p:"Daniel"}:x),ix=arr.map((x,k)=>(x.l||"").trim().toLowerCase()===l?k:-1).filter(k=>k>=0),all=ix.every(k=>arr[k].ok);ix.forEach(k=>{arr[k]={...arr[k],ok:!all}});await setS(m,c,arr)}
  if(a==="ck"){const m=$("mes").value,c=b.dataset.cat,arr=rawS(m,c).slice(),k=+b.dataset.ix,e=arr[k];arr[k]={...(typeof e==="number"?{v:e,p:"Daniel"}:e),ok:!(e&&e.ok)};await setS(m,c,arr)}
  if(a==="sd"){const m=$("mes").value,c=b.dataset.cat,arr=rawS(m,c).slice();arr.splice(+b.dataset.ix,1);await setS(m,c,arr)}
  if(a==="sa")await addC(b.dataset.cat);
